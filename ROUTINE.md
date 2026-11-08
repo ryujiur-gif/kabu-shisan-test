@@ -14,7 +14,13 @@ python -c "from kabu.settle import jst_today; print(jst_today())"
 最後に表示された日付が **today**（日本時間の本日）です。以降の手順では、この日付（例：2026-11-10）をそのまま文字で書き込んでください（シェル変数は次のコマンドに引き継がれません）。
 
 `data/daily/<today>/settle.json` を読みます。
-- **ファイルが無い**（Actions の遅れ）→ 5分おきに `git pull -q origin main` して最大30分待つ。それでも無ければ、`python -m kabu.prepare` を自分で実行する（株価が取れず price_error になる見込み）。その場合はメール本文の先頭に「※本日は株価データの準備が間に合わなかったため、数値データなしで判断しています」と追記する。
+- **ファイルが無い**（6:20 の自動実行が動かなかった）→ 次のコマンドで GitHub Actions に準備を依頼する（依頼ファイルを push すると自動で起動する）。
+  ```bash
+  mkdir -p data/request && echo "<today> $(date -u +%H:%M:%S)" > data/request/prepare.txt
+  git add data/request && git commit -q -m "朝のデータ準備を依頼 <today>" && git push -q origin HEAD:main
+  ```
+  その後、1分おきに `git pull -q origin main` して `data/daily/<today>/settle.json` ができるのを最大15分待つ（通常2〜3分）。
+  それでも無ければ、**`python -m kabu.prepare` は実行しない**（この環境では株価が取れず空の資料になるため）。数値データなしでニュースだけから判断し、メール本文の先頭に「※本日は株価データの準備が間に合わなかったため、数値データなしで判断しています。売買の確定は次回にまとめて行います」と追記する。
 - `status` が `holiday` → 何もせず終了（メールも送らない）。
 - `status` が `price_error` → 手順 2〜5 は通常どおり行い、メール本文の先頭に「※本日は株価データの取得に失敗したため、前回分の約定・評価は次回にまとめて反映します」と追記する。
 - `holdings` が現在の持ち株です。

@@ -3,6 +3,8 @@ name: 朝の株価データ準備
 on:
   schedule:
     - cron: "20 21 * * 0-4"   # 平日 6:20 JST（米国市場の引け後）
+  push:
+    paths: ["data/request/**"]   # 7時の Claude がデータ未準備のときに依頼ファイルを push して起動する
   workflow_dispatch:
     inputs:
       today:
