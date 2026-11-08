@@ -73,3 +73,10 @@ def test_missed_day_is_caught_up(tmp_path):
     r = run(WED, tmp_path, fetch=fake(P))   # TUE run was missed
     assert r["status"] == "ok"
     assert len(rows(tmp_path / "trades.csv")) == 1
+
+def test_last_closes_saved(tmp_path):
+    run(MON, tmp_path, fetch=fake(P))
+    write_order(tmp_path, MON, buys=["7203"])
+    run(TUE, tmp_path, fetch=fake(P))
+    st = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert st["last_closes"] == {"7203": 2100.0} and st["last_date"] == MON.isoformat()

@@ -1,0 +1,54 @@
+import json
+from kabu.report import build_email, build_site
+from kabu.finalize import run as finalize_run
+
+ORDER = {"date": "2026-11-10", "summary": "米株高で輸出株に追い風。",
+         "buys": [{"code": "7203", "name": "トヨタ自動車", "confidence": "高", "reason": "円安"},
+                  {"code": "6758", "name": "ソニーグループ", "confidence": "低", "reason": "決算"}],
+         "sells": []}
+STATE = {"start_date": "2026-11-09", "cash": 800000,
+         "holdings": {"9984": {"name": "ソフトバンクグループ", "shares": 10, "avg_cost": 20000.0}},
+         "last_closes": {"9984": 21000.0}, "benchmark": {"start_open": 50000.0}}
+HIST = [{"date": "2026-11-09", "total": "1010000", "cash": "800000", "stock_value": "210000",
+         "nikkei_close": "50500", "benchmark_value": "1010000"},
+        {"date": "2026-11-10", "total": "1023456", "cash": "800000", "stock_value": "223456",
+         "nikkei_close": "50000", "benchmark_value": "1000000"}]
+TRADES = [{"date": "2026-11-09", "side": "買", "code": "9984", "name": "ソフトバンクグループ",
+           "shares": "10", "price": "20000", "amount": "200000", "status": "約定", "reason": "x"}]
+
+def test_subject_format():
+    e = build_email(ORDER, STATE, HIST, TRADES, "https://example.github.io/k/")
+    assert e["subject"] == "【株予想】11/10 買い：トヨタ自動車・ソニーグループ／売り：なし"
+
+def test_body_contents():
+    body = build_email(ORDER, STATE, HIST, TRADES, "https://example.github.io/k/")["body"]
+    assert "+23,456円" in body and "+2.35%" in body
+    assert "日経平均" in body and "https://example.github.io/k/" in body
+    assert "20万円" in body and "5万円" in body
+    assert body.rstrip().endswith("※試験運用です。投資判断はご自身の責任で行ってください。")
+
+def test_body_before_first_history():
+    body = build_email(ORDER, STATE, [], [], "u")["body"]
+    assert "1,000,000円" in body
+
+def test_site_html():
+    html = build_site(STATE, HIST, TRADES, ORDER)
+    assert "<title>株予想 成績</title>" in html and "2026-11-10" in html and "トヨタ自動車" in html
+
+def test_finalize_rejects_bad_order(tmp_path):
+    (tmp_path / "data" / "orders").mkdir(parents=True)
+    (tmp_path / "data" / "state.json").write_text(json.dumps(STATE), encoding="utf-8")
+    bad = dict(ORDER, buys=ORDER["buys"][:1])
+    (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(bad), encoding="utf-8")
+    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
+    assert code == 1 and errs
+
+def test_finalize_writes_outputs(tmp_path):
+    (tmp_path / "data" / "orders").mkdir(parents=True)
+    st = dict(STATE, holdings={})
+    (tmp_path / "data" / "state.json").write_text(json.dumps(st), encoding="utf-8")
+    (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
+    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
+    assert code == 0 and errs == []
+    assert json.loads((tmp_path / "out" / "email.json").read_text(encoding="utf-8"))["subject"].startswith("【株予想】")
+    assert (tmp_path / "docs" / "index.html").exists()

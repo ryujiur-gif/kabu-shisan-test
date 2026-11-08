@@ -109,6 +109,8 @@ def run(today: date, data_dir: Path, fetch=None) -> dict:
                  "benchmark_value": bench})
     hist.sort(key=lambda r: r["date"])
     _write_rows(hp, HIST_FIELDS, hist)
+    state["last_closes"] = closes
+    state["last_date"] = p.isoformat()
     _write_json(state_p, state)
     return {"status": "ok", "holdings": _holdings_view(state, closes), "total": v["total"],
             "message": f"{p} 分を確定しました（約定等 {len(new_trades)} 件）"}
