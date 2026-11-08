@@ -1,8 +1,25 @@
 """株価取得。yfinance を使い、失敗したら Yahoo chart API を直接呼ぶ。"""
+import math
 import urllib.request
 from datetime import date, timedelta
 
 NIKKEI = "^N225"
+
+
+def _ok(x) -> bool:
+    try:
+        return x is not None and math.isfinite(float(x)) and float(x) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def clean_bar(ticker: str, open_, close, volume):
+    """欠損(NaN/0)や売買停止(出来高0)の足を None にする。指数は出来高を見ない。"""
+    if not (_ok(open_) and _ok(close)):
+        return None
+    if ticker != NIKKEI and not (volume and volume > 0):
+        return None
+    return {"open": float(open_), "close": float(close)}
 
 
 def fetch_yfinance(ticker: str, d: date):
@@ -14,7 +31,7 @@ def fetch_yfinance(ticker: str, d: date):
     row = df.iloc[0]
     if row.name.date() != d:
         return None
-    return {"open": float(row["Open"]), "close": float(row["Close"])}
+    return clean_bar(ticker, row["Open"], row["Close"], row.get("Volume"))
 
 
 def fetch_yahoo_chart(ticker: str, d: date):
@@ -29,9 +46,9 @@ def fetch_yahoo_chart(ticker: str, d: date):
     with urllib.request.urlopen(req, timeout=20) as r:
         res = json.load(r)["chart"]["result"][0]
     q = res["indicators"]["quote"][0]
-    if not res.get("timestamp") or q["open"][0] is None:
+    if not res.get("timestamp"):
         return None
-    return {"open": float(q["open"][0]), "close": float(q["close"][0])}
+    return clean_bar(ticker, q["open"][0], q["close"][0], (q.get("volume") or [None])[0])
 
 
 def fetch_with_fallback(ticker: str, d: date, primary=fetch_yfinance, secondary=fetch_yahoo_chart):
@@ -40,8 +57,8 @@ def fetch_with_fallback(ticker: str, d: date, primary=fetch_yfinance, secondary=
             got = f(ticker, d)
         except Exception:
             got = None
-        if got and got.get("open") and got.get("close"):
-            return got
+        if got and _ok(got.get("open")) and _ok(got.get("close")):
+            return {"open": float(got["open"]), "close": float(got["close"])}
     return None
 
 

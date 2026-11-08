@@ -10,9 +10,20 @@ def load_universe(path="data/nikkei225.csv") -> dict[str, str]:
         return {r["code"]: r["name"] for r in csv.DictReader(f)}
 
 
-def validate_order(order: dict, state: dict, universe: dict) -> list[str]:
+def validate_order(order: dict, state: dict, universe: dict, today: str | None = None) -> list[str]:
+    if not isinstance(order, dict):
+        return ["注文ファイルの形式が正しくありません"]
+    buys, sells = order.get("buys"), order.get("sells")
+    if not isinstance(buys, list) or not isinstance(sells, list) or             not all(isinstance(x, dict) for x in buys + sells):
+        return ["buys と sells は銘柄({...})のリストにしてください"]
     errs = []
-    buys, sells = order.get("buys", []), order.get("sells", [])
+    if today is not None and order.get("date") != today:
+        errs.append(f"date は {today} にしてください（現在 {order.get('date')}）")
+    if order.get("settled", False) is not False:
+        errs.append("settled は false にしてください")
+    for x in buys + sells:
+        if not str(x.get("name", "")).strip():
+            errs.append(f"{x.get('code')} の name（銘柄名）が空です")
     held = state["holdings"]
     if len(buys) != 2:
         errs.append(f"買い銘柄は2つにしてください（現在{len(buys)}）")

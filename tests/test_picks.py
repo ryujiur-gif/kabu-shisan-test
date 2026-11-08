@@ -42,3 +42,20 @@ def test_duplicate_sell():
 def test_missing_reason():
     order = o([("7203", "高"), ("6758", "中")]); order["buys"][0]["reason"] = ""
     assert validate_order(order, st(), U)
+
+def test_date_must_match_today():
+    order = o([("7203", "高"), ("6758", "中")])
+    assert validate_order(order, st(), U, today="2026-11-10") == []
+    assert validate_order(order, st(), U, today="2026-11-11")
+
+def test_settled_true_rejected():
+    order = o([("7203", "高"), ("6758", "中")]); order["settled"] = True
+    assert validate_order(order, st(), U)
+
+def test_missing_name_rejected():
+    order = o([("7203", "高"), ("6758", "中")]); del order["buys"][0]["name"]
+    assert validate_order(order, st(), U)
+
+def test_non_list_rejected():
+    order = o([("7203", "高"), ("6758", "中")]); order["sells"] = "none"
+    assert validate_order(order, st(), U)

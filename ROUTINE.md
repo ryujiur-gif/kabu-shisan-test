@@ -7,10 +7,9 @@
 ## 1. 準備
 ```bash
 pip install -q -r requirements.txt
-TODAY=$(TZ=Asia/Tokyo date +%F)
-python -m kabu.settle --today $TODAY
+python -m kabu.settle
 ```
-出力の JSON を読みます。
+出力の JSON を読みます。**`today` が本日の日付（日本時間）です。以降の手順では、この日付（例：2026-11-10）をそのまま文字で書き込んでください**（シェル変数は次のコマンドに引き継がれません）。
 - `status` が `holiday` → 何もせず終了（メールも送らない）。
 - `status` が `price_error` → 手順 2〜4 は通常どおり行い、メール本文の先頭に「※本日は株価データの取得に失敗したため、前回分の約定・評価は次回にまとめて反映します」と追記する。
 - `holdings` が現在の持ち株です。
@@ -29,7 +28,7 @@ python -m kabu.settle --today $TODAY
 - 理由は1〜2文で、根拠のニュースを具体的に書く。
 - 市況の要約（summary）を3〜5行で書く。
 
-`data/orders/$TODAY.json` を次の形式で作成：
+`data/orders/<today>.json`（例：`data/orders/2026-11-10.json`）を次の形式で作成。`date` には today と同じ日付、`settled` は必ず false：
 ```json
 {"date": "YYYY-MM-DD", "summary": "...",
  "buys": [{"code": "7203", "name": "トヨタ自動車", "confidence": "高", "reason": "..."},
@@ -41,20 +40,20 @@ python -m kabu.settle --today $TODAY
 
 ## 4. 仕上げ
 ```bash
-python -m kabu.finalize --today $TODAY
+python -m kabu.finalize --today <today>
 ```
 `エラー:` が出たら内容に従って注文ファイルを直し、OK が出るまで再実行します。
 
-## 5. メール送信
-`out/email.json` の `subject` と `body` をそのまま使い、Gmail で **ryuji.ur@gmail.com** に送信します（price_error のときは手順1の注記を本文先頭に追加）。
-
-## 6. 保存
+## 5. 保存（メールより先に行う）
 ```bash
 git add data docs
-git commit -m "朝の更新 $TODAY"
+git commit -m "朝の更新 <today>"
 git push origin HEAD:main
 ```
-push に失敗したら `git pull --rebase origin main` してから再度 push します。
+push に失敗したら `git pull --rebase origin main` してから再度 push します。競合した場合は、リモート側の data/ を採用し（`git checkout --theirs` ではなく、いったん `git rebase --abort` → `git reset --hard origin/main`）、手順1からやり直してください。
+
+## 6. メール送信
+`out/email.json` の `subject` と `body` をそのまま使い、Gmail で **ryuji.ur@gmail.com** に送信します（price_error のときは手順1の注記を本文先頭に追加）。
 
 ## 失敗したとき
 どこかで止まって解決できない場合も、可能な限り ryuji.ur@gmail.com に「【株予想】本日の処理でエラー」という件名で、何が起きたかを短く知らせてください。

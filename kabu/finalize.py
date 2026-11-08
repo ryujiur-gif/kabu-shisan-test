@@ -1,6 +1,6 @@
 """仕上げ：注文を検証し、メール文面(out/email.json)と成績ページ(docs/index.html)を作る。
 
-使い方: python -m kabu.finalize --today 2026-11-10
+使い方: python -m kabu.finalize [--today 2026-11-10]（省略時は日本時間の今日）
 終了コード 1 のときは表示されたエラーを直して注文ファイルを書き直し、再実行する。
 """
 import argparse
@@ -10,7 +10,7 @@ from pathlib import Path
 
 from kabu.picks import load_universe, validate_order
 from kabu.report import build_email, build_site
-from kabu.settle import read_rows
+from kabu.settle import jst_today, read_rows
 
 
 def run(today: str, root: Path, universe=None) -> tuple[int, list[str]]:
@@ -20,9 +20,12 @@ def run(today: str, root: Path, universe=None) -> tuple[int, list[str]]:
     order_p = data / "orders" / f"{today}.json"
     if not order_p.exists():
         return 1, [f"{order_p} がありません"]
-    order = json.loads(order_p.read_text(encoding="utf-8"))
+    try:
+        order = json.loads(order_p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return 1, [f"注文ファイルが JSON として読めません: {e}"]
     universe = universe if universe is not None else load_universe(data / "nikkei225.csv")
-    errs = validate_order(order, state, universe)
+    errs = validate_order(order, state, universe, today=today)
     if errs:
         return 1, errs
     hist = read_rows(data / "history.csv")
@@ -42,10 +45,10 @@ def run(today: str, root: Path, universe=None) -> tuple[int, list[str]]:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--today", required=True)
+    ap.add_argument("--today", default=None)
     ap.add_argument("--root", default=".")
     a = ap.parse_args()
-    code, errs = run(a.today, Path(a.root))
+    code, errs = run(a.today or jst_today().isoformat(), Path(a.root))
     for e in errs:
         print("エラー:", e)
     if code == 0:

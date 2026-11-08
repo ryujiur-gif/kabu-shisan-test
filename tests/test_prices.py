@@ -32,3 +32,19 @@ def test_both_fail_returns_none():
         raise RuntimeError("x")
     assert prices.fetch_with_fallback("7203.T", D, bad, bad) is None
 
+
+def test_nan_from_primary_falls_back():
+    nan = float("nan")
+    got = prices.fetch_with_fallback("7203.T", D, lambda t, d: {"open": nan, "close": nan},
+                                     lambda t, d: {"open": 5.0, "close": 6.0})
+    assert got == {"open": 5.0, "close": 6.0}
+
+def test_nan_everywhere_is_none():
+    nan = float("nan")
+    assert prices.fetch_with_fallback("7203.T", D, lambda t, d: {"open": nan, "close": 1.0},
+                                      lambda t, d: {"open": 0.0, "close": 1.0}) is None
+
+def test_zero_volume_stock_bar_is_halt():
+    assert prices.clean_bar("7203.T", 100.0, 100.0, 0) is None
+    assert prices.clean_bar("^N225", 100.0, 101.0, 0) == {"open": 100.0, "close": 101.0}
+    assert prices.clean_bar("7203.T", 100.0, 101.0, 5000) == {"open": 100.0, "close": 101.0}

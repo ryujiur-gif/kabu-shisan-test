@@ -80,3 +80,48 @@ def test_last_closes_saved(tmp_path):
     run(TUE, tmp_path, fetch=fake(P))
     st = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     assert st["last_closes"] == {"7203": 2100.0} and st["last_date"] == MON.isoformat()
+
+def test_price_error_includes_holdings(tmp_path):
+    run(MON, tmp_path, fetch=fake(P))
+    write_order(tmp_path, MON, buys=["7203"])
+    run(TUE, tmp_path, fetch=fake(P))
+    write_order(tmp_path, TUE, sells=["7203"])
+    r = run(WED, tmp_path, fetch=fake({}))
+    assert r["status"] == "price_error" and r["holdings"][0]["code"] == "7203"
+    assert r["today"] == WED.isoformat()
+
+def test_order_dated_on_holiday_is_cancelled(tmp_path):
+    run(MON, tmp_path, fetch=fake(P))
+    write_order(tmp_path, date(2026, 11, 8), buys=["7203"])   # Sunday, wrong
+    write_order(tmp_path, MON, buys=["7203"])
+    r = run(TUE, tmp_path, fetch=fake(P))
+    assert r["status"] == "ok"
+    st = {t["status"] for t in rows(tmp_path / "trades.csv") if t["date"] == "2026-11-08"}
+    assert st == {"取消"}
+
+def test_old_unpriceable_order_does_not_block(tmp_path):
+    run(MON, tmp_path, fetch=fake(P))
+    write_order(tmp_path, MON, buys=["9999"])                  # never priced
+    r = run(WED, tmp_path, fetch=fake(P))                      # MON < p(TUE): give up
+    assert r["status"] == "ok"
+    assert rows(tmp_path / "trades.csv")[0]["status"] == "取消"
+
+def test_missing_close_uses_last_close(tmp_path):
+    run(MON, tmp_path, fetch=fake(P))
+    write_order(tmp_path, MON, buys=["7203"])
+    run(TUE, tmp_path, fetch=fake(P))                          # last close 2100
+    P2 = dict(P); P2[("^N225", TUE)] = {"open": 1.0, "close": 50000.0}
+    P2.pop(("7203.T", TUE))
+    P2[("6758.T", TUE)] = {"open": 1.0, "close": 1.0}
+    st_p = tmp_path / "state.json"
+    s = json.loads(st_p.read_text(encoding="utf-8"))
+    s["holdings"]["6758"] = {"name": "x", "shares": 1, "avg_cost": 1.0}
+    st_p.write_text(json.dumps(s), encoding="utf-8")
+    run(WED, tmp_path, fetch=fake(P2))
+    h = rows(tmp_path / "history.csv")[-1]
+    assert int(h["stock_value"]) == 100 * 2100 + 1
+
+def test_default_today_is_jst():
+    from datetime import datetime, timezone
+    from kabu.settle import jst_today
+    assert jst_today(datetime(2026, 11, 9, 22, 0, tzinfo=timezone.utc)) == date(2026, 11, 10)
