@@ -12,4 +12,14 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -q -r requirements.txt
       - run: python -m kabu.briefing --today 2026-11-09 | head -40
-      - run: python -c "from datetime import date; from kabu.prices import get_day_prices; print(get_day_prices(['7203','6758'], date(2026,11,6)))"
+      - run: |
+          python - <<'PY'
+          from datetime import date
+          from kabu.prices import get_day_prices, get_nikkei
+          from kabu.briefing import fetch_market, fetch_indicators
+          from kabu.picks import load_universe
+          p = get_day_prices(['7203', '6758'], date(2026, 11, 6)); print(p); assert len(p) == 2
+          assert get_nikkei(date(2026, 11, 6))
+          m = fetch_market(); ok = [x for x in m if x['close'] is not None]; print(len(ok), 'of', len(m)); assert len(ok) >= 9
+          ind = fetch_indicators(list(load_universe())); n = sum(1 for v in ind.values() if v); print(n, 'of 225'); assert n >= 215
+          PY
