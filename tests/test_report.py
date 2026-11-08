@@ -52,3 +52,21 @@ def test_finalize_writes_outputs(tmp_path):
     assert code == 0 and errs == []
     assert json.loads((tmp_path / "out" / "email.json").read_text(encoding="utf-8"))["subject"].startswith("【株予想】")
     assert (tmp_path / "docs" / "index.html").exists()
+
+def test_email_market_section():
+    mk = [{"label": "NYダウ", "close": 51285.73, "chg": -0.46, "date": "2026-11-06"},
+          {"label": "金", "close": None, "chg": None, "date": "-"}]
+    body = build_email(ORDER, STATE, HIST, TRADES, "u", market=mk)["body"]
+    assert "【主要指標（前日終値）】" in body and "NYダウ 51,285.73（-0.46%）" in body
+    assert "金 取得できず" in body
+
+def test_finalize_uses_briefing_json(tmp_path):
+    (tmp_path / "data" / "orders").mkdir(parents=True)
+    (tmp_path / "out").mkdir()
+    st = dict(STATE, holdings={})
+    (tmp_path / "data" / "state.json").write_text(json.dumps(st), encoding="utf-8")
+    (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
+    (tmp_path / "out" / "briefing.json").write_text(json.dumps({"today": "2026-11-10", "market": [
+        {"label": "NYダウ", "close": 1.0, "chg": 0.1, "date": "x"}]}), encoding="utf-8")
+    finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
+    assert "NYダウ" in json.loads((tmp_path / "out" / "email.json").read_text(encoding="utf-8"))["body"]

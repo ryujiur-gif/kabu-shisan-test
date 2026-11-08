@@ -35,8 +35,14 @@ def run(today: str, root: Path, universe=None) -> tuple[int, list[str]]:
     cfg_p = root / "config.json"
     site_url = json.loads(cfg_p.read_text(encoding="utf-8"))["site_url"] if cfg_p.exists() else ""
     (root / "out").mkdir(exist_ok=True)
+    market = None
+    bp = root / "out" / "briefing.json"
+    if bp.exists():
+        b = json.loads(bp.read_text(encoding="utf-8"))
+        if b.get("today") == today:
+            market = b.get("market")
     (root / "out" / "email.json").write_text(
-        json.dumps(build_email(order, state, hist, last, site_url), ensure_ascii=False, indent=2),
+        json.dumps(build_email(order, state, hist, last, site_url, market=market), ensure_ascii=False, indent=2),
         encoding="utf-8")
     (root / "docs").mkdir(exist_ok=True)
     (root / "docs" / "index.html").write_text(build_site(state, hist, trades, order), encoding="utf-8")

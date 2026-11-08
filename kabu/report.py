@@ -24,13 +24,23 @@ def _man(n) -> str:
     return f"{n // 10000}万円"
 
 
-def build_email(order, state, history_rows, last_trades, site_url) -> dict:
+def build_email(order, state, history_rows, last_trades, site_url, market=None) -> dict:
     d = date.fromisoformat(order["date"])
     buys = "・".join(b["name"] for b in order["buys"]) or "なし"
     sells = "・".join(s["name"] for s in order["sells"]) or "なし"
     subject = f"【株予想】{d.month}/{d.day} 買い：{buys}／売り：{sells}"
 
-    L = [f"■ 本日（{d.month}/{d.day}）の予想", "", "【市況】", order["summary"].strip(), "", "【買い】"]
+    L = [f"■ 本日（{d.month}/{d.day}）の予想", "", "【市況】", order["summary"].strip(), ""]
+    if market:
+        L.append("【主要指標（前日終値）】")
+        for m in market:
+            if m.get("close") is None:
+                L.append(f"・{m['label']} 取得できず")
+            else:
+                chg = "" if m.get("chg") is None else f"（{'+' if m['chg'] >= 0 else ''}{m['chg']:.2f}%）"
+                L.append(f"・{m['label']} {m['close']:,.2f}{chg}")
+        L.append("")
+    L.append("【買い】")
     for b in order["buys"]:
         L.append(f"・{b['name']}（{b['code']}）期待度：{b['confidence']}　予定額：{_man(amount_for(b['confidence']))}")
         L.append(f"　理由：{b['reason']}")
