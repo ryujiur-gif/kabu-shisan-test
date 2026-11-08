@@ -40,7 +40,7 @@ def test_finalize_rejects_bad_order(tmp_path):
     (tmp_path / "data" / "state.json").write_text(json.dumps(STATE), encoding="utf-8")
     bad = dict(ORDER, buys=ORDER["buys"][:1])
     (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(bad), encoding="utf-8")
-    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
+    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""}, check_note_files=False)
     assert code == 1 and errs
 
 def test_finalize_writes_outputs(tmp_path):
@@ -48,7 +48,7 @@ def test_finalize_writes_outputs(tmp_path):
     st = dict(STATE, holdings={})
     (tmp_path / "data" / "state.json").write_text(json.dumps(st), encoding="utf-8")
     (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
-    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
+    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""}, check_note_files=False)
     assert code == 0 and errs == []
     assert json.loads((tmp_path / "out" / "email.json").read_text(encoding="utf-8"))["subject"].startswith("【株予想】")
     assert (tmp_path / "docs" / "index.html").exists()
@@ -68,5 +68,13 @@ def test_finalize_uses_briefing_json(tmp_path):
     (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
     (tmp_path / "out" / "briefing.json").write_text(json.dumps({"today": "2026-11-10", "market": [
         {"label": "NYダウ", "close": 1.0, "chg": 0.1, "date": "x"}]}), encoding="utf-8")
-    finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
+    finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""}, check_note_files=False)
     assert "NYダウ" in json.loads((tmp_path / "out" / "email.json").read_text(encoding="utf-8"))["body"]
+
+
+def test_finalize_requires_notes(tmp_path):
+    (tmp_path / "data" / "orders").mkdir(parents=True)
+    (tmp_path / "data" / "state.json").write_text(json.dumps(dict(STATE, holdings={})), encoding="utf-8")
+    (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
+    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
+    assert code == 1 and any("企業メモ" in e for e in errs)

@@ -59,3 +59,35 @@ def test_missing_name_rejected():
 def test_non_list_rejected():
     order = o([("7203", "高"), ("6758", "中")]); order["sells"] = "none"
     assert validate_order(order, st(), U)
+
+
+from kabu.picks import check_notes
+
+
+def _note(d, code, updated):
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{code}.md").write_text(f"# 企業メモ\n更新日：{updated}\n", encoding="utf-8")
+
+
+def test_check_notes_ok(tmp_path):
+    _note(tmp_path, "7203", "2026-11-01")
+    _note(tmp_path, "6758", "2026-09-01")
+    order = o([("7203", "高"), ("6758", "中")])
+    assert check_notes(order, tmp_path, "2026-11-10") == []
+
+
+def test_check_notes_missing_and_old(tmp_path):
+    _note(tmp_path, "6758", "2026-07-01")          # 90日超
+    order = o([("7203", "高"), ("6758", "中")], ["9984"])
+    errs = check_notes(order, tmp_path, "2026-11-10")
+    assert any("7203" in e and "ありません" in e for e in errs)
+    assert any("6758" in e and "古い" in e for e in errs)
+    assert any("9984" in e for e in errs)
+
+
+def test_check_notes_bad_date(tmp_path):
+    tmp_path.mkdir(exist_ok=True)
+    (tmp_path / "7203.md").write_text("更新日：YYYY-MM-DD\n", encoding="utf-8")
+    _note(tmp_path, "6758", "2026-11-01")
+    errs = check_notes(o([("7203", "高"), ("6758", "中")]), tmp_path, "2026-11-10")
+    assert any("7203" in e and "更新日" in e for e in errs)

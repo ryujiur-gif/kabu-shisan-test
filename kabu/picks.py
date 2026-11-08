@@ -48,3 +48,25 @@ def validate_order(order: dict, state: dict, universe: dict, today: str | None =
     if not str(order.get("summary", "")).strip():
         errs.append("市況の要約(summary)が空です")
     return errs
+
+
+def check_notes(order: dict, notes_dir, today: str, max_age_days: int = 90) -> list[str]:
+    """買い・売り銘柄の企業メモ（data/notes/<コード>.md）があり、更新日が新しいかを確認する。"""
+    import re
+    from datetime import date
+    errs = []
+    t = date.fromisoformat(today)
+    for x in order.get("buys", []) + order.get("sells", []):
+        code = x.get("code")
+        p = Path(notes_dir) / f"{code}.md"
+        if not p.exists():
+            errs.append(f"{code} の企業メモ data/notes/{code}.md がありません（ROUTINE.md 手順3.5で作成してください）")
+            continue
+        m = re.search(r"更新日[：:]\s*(\d{4}-\d{2}-\d{2})", p.read_text(encoding="utf-8"))
+        if not m:
+            errs.append(f"{code} の企業メモに「更新日：YYYY-MM-DD」の形で日付を書いてください")
+            continue
+        age = (t - date.fromisoformat(m.group(1))).days
+        if age > max_age_days:
+            errs.append(f"{code} の企業メモが古いです（{age}日前）。調べ直して更新してください")
+    return errs

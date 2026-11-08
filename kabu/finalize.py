@@ -8,12 +8,12 @@ import json
 import sys
 from pathlib import Path
 
-from kabu.picks import load_universe, validate_order
+from kabu.picks import check_notes, load_universe, validate_order
 from kabu.report import build_email, build_site
 from kabu.settle import jst_today, read_rows
 
 
-def run(today: str, root: Path, universe=None) -> tuple[int, list[str]]:
+def run(today: str, root: Path, universe=None, check_note_files: bool = True) -> tuple[int, list[str]]:
     root = Path(root)
     data = root / "data"
     state = json.loads((data / "state.json").read_text(encoding="utf-8"))
@@ -26,6 +26,8 @@ def run(today: str, root: Path, universe=None) -> tuple[int, list[str]]:
         return 1, [f"注文ファイルが JSON として読めません: {e}"]
     universe = universe if universe is not None else load_universe(data / "nikkei225.csv")
     errs = validate_order(order, state, universe, today=today)
+    if not errs and check_note_files:
+        errs = check_notes(order, data / "notes", today)
     if errs:
         return 1, errs
     hist = read_rows(data / "history.csv")
