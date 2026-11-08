@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>株予想 成績</title>
+<style>
+:root{--bg:#f7f7f4;--card:#fff;--fg:#1d1d1b;--mute:#6b6b66;--line:#e4e4de;--up:#c2410c;--down:#1d4ed8;--mine:#0f766e;--bench:#9a9a92}
+@media (prefers-color-scheme:dark){:root{--bg:#151514;--card:#1f1f1d;--fg:#ececea;--mute:#9b9b95;--line:#33332f;--up:#fb923c;--down:#60a5fa;--mine:#2dd4bf;--bench:#77776f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Hiragino Sans","Yu Gothic UI",sans-serif;line-height:1.6}
+main{max-width:760px;margin:0 auto;padding:16px}h1{font-size:1.25rem;margin:8px 0 2px}h2{font-size:1rem;margin:0 0 10px}
+.sub{color:var(--mute);font-size:.8rem;margin:0 0 16px}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.kpi small{display:block;color:var(--mute);font-size:.72rem}.kpi b{font-size:1.05rem;font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}table{width:100%;border-collapse:collapse;font-size:.82rem;font-variant-numeric:tabular-nums}
+th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}td small{display:block;color:var(--mute);font-size:.7rem}
+.scroll{overflow-x:auto}.pick{border-top:1px solid var(--line);padding:8px 0}.pick p{margin:2px 0 0;font-size:.85rem;color:var(--mute)}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;border:1px solid currentColor;border-radius:4px;padding:0 5px;margin-right:6px}
+.summary{font-size:.9rem;margin:0 0 6px}.legend{font-size:.75rem;color:var(--mute)}.legend i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin:0 4px 0 10px}
+footer{color:var(--mute);font-size:.75rem;text-align:center;padding:8px 0 24px}
+</style></head><body><main>
+<h1>株予想 試験運用の成績</h1>
+<p class="sub">仮想の100万円で毎朝の予想どおりに売買した場合（運用開始前 終値時点・運用開始 運用開始前）</p>
+<section class="card kpis">
+<div class="kpi"><small>総資産</small><b>1,000,000円</b></div>
+<div class="kpi"><small>損益</small><b class="up">+0円<br>+0.00%</b></div>
+<div class="kpi"><small>日経平均との差</small><b class="up">+0円</b></div>
+</section>
+<section class="card"><h2>資産の推移</h2>
+<div class="legend"><i style="background:var(--mine)"></i>予想どおり売買<i style="background:var(--bench)"></i>日経平均に同額投資</div>
+<div style="position:relative;height:240px"><canvas id="c"></canvas></div></section>
+<section class="card"><h2>最新の予想（-）</h2><p>まだありません</p></section>
+<section class="card"><h2>持ち株</h2><div class="scroll"><table><tr><th>銘柄</th><th>株数</th><th>取得単価</th><th>現在値</th><th>損益</th></tr><tr><td colspan='5'>持ち株はありません</td></tr></table></div>
+<p class="sub" style="margin:8px 0 0">現金：1,000,000円</p></section>
+<section class="card"><h2>取引履歴</h2><div class="scroll"><table><tr><th>日付</th><th>売買</th><th>銘柄</th><th>株数</th><th>単価</th><th>状態</th></tr><tr><td colspan='6'>まだありません</td></tr></table></div></section>
+<footer>※試験運用です。投資判断はご自身の責任で行ってください。</footer>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>const D={"labels": [], "mine": [], "bench": []};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+if(window.Chart&&D.labels.length){new Chart(document.getElementById('c'),{type:'line',
+data:{labels:D.labels.map(s=>s.slice(5)),datasets:[
+{label:'予想どおり売買',data:D.mine,borderColor:css('--mine'),borderWidth:2,pointRadius:D.labels.length<3?3:0,tension:.2},
+{label:'日経平均に同額投資',data:D.bench,borderColor:css('--bench'),borderWidth:2,borderDash:[4,3],pointRadius:D.labels.length<3?3:0,tension:.2}]},
+options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},
+tooltip:{callbacks:{label:c=>c.dataset.label+'：'+c.parsed.y.toLocaleString()+'円'}}},
+scales:{x:{ticks:{color:css('--mute'),maxTicksLimit:6},grid:{display:false}},
+y:{ticks:{color:css('--mute'),callback:v=>(v/10000).toFixed(0)+'万'},grid:{color:css('--line')}}}}});}
+else{document.getElementById('c').parentNode.innerHTML='<p class="sub">記録がたまるとグラフが表示されます</p>';}
+</script>
+</body></html>
