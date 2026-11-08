@@ -113,3 +113,17 @@ def test_render_with_fundamentals_and_crosses():
     assert "9.5倍" in md and "0.90倍" in md
     assert "### ゴールデンクロス" in md and "5日/25日" in md
     assert "### 割安・好財務" in md and "38.0%" in md and "2026-11-07" in md
+
+
+from kabu.briefing import sector_medians, rank_peer_value
+
+
+def test_sector_medians_and_peer_rank():
+    sectors = {"A": "自動車", "B": "自動車", "C": "自動車", "D": "銀行"}
+    fund = {"A": {"per": 8.0, "pbr": 0.8, "roe": 12.0}, "B": {"per": 12.0, "pbr": 1.2, "roe": 10.0},
+            "C": {"per": 16.0, "pbr": 1.6, "roe": 8.0}, "D": {"per": 10.0, "pbr": 0.5, "roe": 7.0}}
+    med = sector_medians(fund, sectors)
+    assert med["自動車"] == {"per": 12.0, "pbr": 1.2, "roe": 10.0, "n": 3}
+    r = rank_peer_value(fund, sectors, med)
+    assert [c for c, _ in r] == ["A"]          # 同業比で PER・PBR が低く ROE が中央値以上
+    assert round(r[0][1]["per_vs_peer"], 1) == -33.3

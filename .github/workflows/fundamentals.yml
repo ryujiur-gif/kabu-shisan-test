@@ -2,7 +2,7 @@ name: 財務データ更新（週1回）
 
 on:
   schedule:
-    - cron: "0 1 * * 6"   # 毎週土曜 10:00 JST
+    - cron: "0 1 * * 6"   # 毎週土曜 10:00 JST（連続増配の項目を追加）
   workflow_dispatch:
   push:
     paths: [".github/workflows/fundamentals.yml"]

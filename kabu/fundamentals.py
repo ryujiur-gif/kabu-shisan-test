@@ -6,7 +6,8 @@ import csv
 import math
 from pathlib import Path
 
-FIELDS = ["per", "fper", "pbr", "roe", "div_yield", "mcap_oku", "op_margin", "rev_growth", "equity_ratio"]
+FIELDS = ["per", "fper", "pbr", "roe", "div_yield", "mcap_oku", "op_margin", "rev_growth", "equity_ratio",
+          "div_streak"]
 
 
 def _num(x):
@@ -21,7 +22,7 @@ def _r(x, nd=2):
     return None if x is None else round(x, nd)
 
 
-def parse_fundamentals(info: dict, equity_ratio: float | None) -> dict:
+def parse_fundamentals(info: dict, equity_ratio: float | None, div_streak: int | None = None) -> dict:
     g = lambda k: _num(info.get(k))
     per = g("trailingPE")
     fper = g("forwardPE")
@@ -37,7 +38,27 @@ def parse_fundamentals(info: dict, equity_ratio: float | None) -> dict:
         "op_margin": pct("operatingMargins"),
         "rev_growth": pct("revenueGrowth"),
         "equity_ratio": _r(equity_ratio, 1),
+        "div_streak": div_streak,
     }
+
+
+def div_growth_years(divs, current_fy: int) -> int | None:
+    """年度（4月〜翌3月）ごとの配当合計が何年連続で増えているか。進行中の年度は除く。データ無しは None。"""
+    if divs is None:
+        return None
+    if len(divs) == 0:
+        return 0
+    fy = [d.year if d.month >= 4 else d.year - 1 for d in divs.index]
+    yearly = divs.groupby(fy).sum()
+    yearly = yearly[yearly.index < current_fy]
+    vals = [float(v) for v in yearly.values]
+    n = 0
+    for i in range(len(vals) - 1, 0, -1):
+        if vals[i] > vals[i - 1] * 1.0001:
+            n += 1
+        else:
+            break
+    return n
 
 
 def equity_ratio_from(bs) -> float | None:
@@ -86,9 +107,15 @@ def fetch_one(code: str) -> dict | None:
         er = equity_ratio_from(t.quarterly_balance_sheet)
     except Exception:
         er = None
+    try:
+        from datetime import date
+        today = date.today()
+        streak = div_growth_years(t.dividends, today.year if today.month >= 4 else today.year - 1)
+    except Exception:
+        streak = None
     if not info and er is None:
         return None
-    return parse_fundamentals(info, er)
+    return parse_fundamentals(info, er, streak)
 
 
 def main():

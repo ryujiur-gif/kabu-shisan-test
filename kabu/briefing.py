@@ -128,6 +128,38 @@ def rank_value(fund: dict, n: int = 10) -> list:
     return items[:n]
 
 
+def sector_medians(fund: dict, sectors: dict) -> dict:
+    from statistics import median
+    groups = {}
+    for code, sec in sectors.items():
+        groups.setdefault(sec, []).append(fund.get(code) or {})
+    out = {}
+    for sec, rows in groups.items():
+        m = {}
+        for k in ("per", "pbr", "roe"):
+            vals = [r[k] for r in rows if r.get(k) is not None]
+            m[k] = round(median(vals), 2) if vals else None
+        m["n"] = len(rows)
+        out[sec] = m
+    return out
+
+
+def rank_peer_value(fund: dict, sectors: dict, med: dict, n: int = 10) -> list:
+    """同業他社（業種中央値）より PER・PBR が低く、ROE は中央値以上の銘柄。"""
+    items = []
+    for code, f in fund.items():
+        m = med.get(sectors.get(code), {})
+        if not f or m.get("n", 0) < 3 or None in (f.get("per"), f.get("pbr"), f.get("roe"),
+                                                  m.get("per"), m.get("pbr"), m.get("roe")):
+            continue
+        if f["per"] < m["per"] and f["pbr"] < m["pbr"] and f["roe"] >= m["roe"]:
+            items.append((code, {**f, "sector": sectors.get(code), "med": m,
+                                 "per_vs_peer": (f["per"] / m["per"] - 1) * 100,
+                                 "pbr_vs_peer": (f["pbr"] / m["pbr"] - 1) * 100}))
+    items.sort(key=lambda t: t[1]["per_vs_peer"] + t[1]["pbr_vs_peer"])
+    return items[:n]
+
+
 def holding_view(code: str, h: dict, ind: dict | None, bought: str | None) -> dict:
     close = ind["close"] if ind else None
     pl_pct = pct_change(h["avg_cost"], close) if close else None
@@ -151,7 +183,7 @@ def _x(x, fmt="{:.1f}倍") -> str:
 
 
 def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fund_date=None,
-                    crosses=None, value=None) -> str:
+                    crosses=None, value=None, peer=None) -> str:
     fund = fund or {}
     fg = lambda code, k: (fund.get(code) or {}).get(k)
     L = [f"# 朝の資料 {today}", "", "数値はプログラムで取得した前営業日（米国は前夜）の終値です。ニュース検索の数値より優先してください。", ""]
@@ -189,13 +221,24 @@ def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fun
             L.append("")
     if value is not None:
         L += [f"### 割安・好財務候補（PBR1.2倍未満・ROE8%以上、PER低い順。財務データ {fund_date or '未取得'} 時点）", "",
-              "| 銘柄 | PER | PBR | ROE | 自己資本比率 | 配当利回り |", "|---|---:|---:|---:|---:|---:|"]
+              "| 銘柄 | PER | PBR | ROE | 自己資本比率 | 配当利回り | 連続増配 |", "|---|---:|---:|---:|---:|---:|---:|"]
         for code, f in value:
             L.append(f"| {names.get(code, '')}({code}) | {_x(f.get('per'))} | {_x(f.get('pbr'), '{:.2f}倍')} | "
                      f"{_x(f.get('roe'), '{:.1f}%')} | {_x(f.get('equity_ratio'), '{:.1f}%')} | "
-                     f"{_x(f.get('div_yield'), '{:.2f}%')} |")
+                     f"{_x(f.get('div_yield'), '{:.2f}%')} | {_x(f.get('div_streak'), '{:.0f}年')} |")
         if not value:
-            L.append("| 該当なし | | | | | |")
+            L.append("| 該当なし | | | | | | |")
+        if peer is not None:
+            L += ["", "### 同業他社より割安（業種の中央値と比べて PER・PBR が低く、ROE は中央値以上）", "",
+                  "| 銘柄 | 業種 | PER（業種比） | PBR（業種比） | ROE（業種中央値） | 配当利回り | 連続増配 |",
+                  "|---|---|---:|---:|---:|---:|---:|"]
+            for code, f in peer:
+                m = f["med"]
+                L.append(f"| {names.get(code, '')}({code}) | {f['sector']} | {_x(f['per'])}（{f['per_vs_peer']:+.0f}%） | "
+                         f"{_x(f['pbr'], '{:.2f}倍')}（{f['pbr_vs_peer']:+.0f}%） | {_x(f['roe'], '{:.1f}%')}（{_x(m['roe'], '{:.1f}%')}） | "
+                         f"{_x(f.get('div_yield'), '{:.2f}%')} | {_x(f.get('div_streak'), '{:.0f}年')} |")
+            if not peer:
+                L.append("| 該当なし | | | | | | |")
         L += ["", "→ 割安でも業績悪化中の「割安のわな」に注意。業績予想・進捗率・信用残は、候補に挙げる銘柄だけ株探などで確認すること。", ""]
     if notes:
         L += ["## 取得できなかったデータ", ""] + [f"- {n}" for n in notes]
@@ -271,13 +314,18 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     bought = _bought_dates(read_rows(root / "data" / "trades.csv"))
     holdings = [holding_view(c, h, ind.get(c), bought.get(c)) for c, h in state["holdings"].items()]
     ranks = rank_candidates({c: ind.get(c) for c in names})
+    import csv as _csv
     from kabu.fundamentals import load_fundamentals
+    with open(root / "data" / "nikkei225.csv", encoding="utf-8") as fh:
+        sectors = {r["code"]: r["sector"] for r in _csv.DictReader(fh)}
     fund_date, fund = load_fundamentals(root / "data" / "fundamentals.csv")
     if not fund:
         notes.append("財務データ（data/fundamentals.csv）がまだありません")
     md = render_briefing(today, market, holdings, ranks, names, notes, fund=fund, fund_date=fund_date,
                          crosses=cross_lists({c: ind.get(c) for c in names}),
-                         value=rank_value({c: fund.get(c) for c in names}))
+                         value=rank_value({c: fund.get(c) for c in names}),
+                         peer=rank_peer_value({c: fund.get(c) for c in names}, sectors,
+                                              sector_medians(fund, sectors)))
     return md, {"today": today, "market": market, "missing": notes}
 
 
