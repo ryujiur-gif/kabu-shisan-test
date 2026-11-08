@@ -4,93 +4,80 @@
     {
       "label": "日経225先物（CME・円建て）",
       "ticker": "NIY=F",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 58235.0,
+      "chg": 1.87,
+      "date": "2026-11-06"
     },
     {
       "label": "日経平均",
       "ticker": "^N225",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 57434.77,
+      "chg": -5.96,
+      "date": "2026-11-06"
     },
     {
       "label": "NYダウ",
       "ticker": "^DJI",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 51285.73,
+      "chg": -0.46,
+      "date": "2026-11-06"
     },
     {
       "label": "S&P500",
       "ticker": "^GSPC",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 7376.86,
+      "chg": 0.31,
+      "date": "2026-11-06"
     },
     {
       "label": "ナスダック総合",
       "ticker": "^IXIC",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 24579.43,
+      "chg": 1.09,
+      "date": "2026-11-06"
     },
     {
       "label": "フィラデルフィア半導体指数",
       "ticker": "^SOX",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 9390.25,
+      "chg": 4.21,
+      "date": "2026-11-06"
     },
     {
       "label": "VIX（恐怖指数）",
       "ticker": "^VIX",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 25.64,
+      "chg": -9.01,
+      "date": "2026-11-06"
     },
     {
       "label": "ドル円",
       "ticker": "JPY=X",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 158.38,
+      "chg": 0.56,
+      "date": "2026-11-08"
     },
     {
       "label": "米10年国債利回り",
       "ticker": "^TNX",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 4.86,
+      "chg": 0.45,
+      "date": "2026-11-06"
     },
     {
       "label": "WTI原油",
       "ticker": "CL=F",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 90.83,
+      "chg": 0.34,
+      "date": "2026-11-06"
     },
     {
       "label": "金",
       "ticker": "GC=F",
-      "close": null,
-      "chg": null,
-      "date": "-"
+      "close": 4074.9,
+      "chg": -0.94,
+      "date": "2026-11-06"
     }
   ],
-  "missing": [
-    "日経225先物（CME・円建て）（NIY=F）",
-    "日経平均（^N225）",
-    "NYダウ（^DJI）",
-    "S&P500（^GSPC）",
-    "ナスダック総合（^IXIC）",
-    "フィラデルフィア半導体指数（^SOX）",
-    "VIX（恐怖指数）（^VIX）",
-    "ドル円（JPY=X）",
-    "米10年国債利回り（^TNX）",
-    "WTI原油（CL=F）",
-    "金（GC=F）",
-    "株価が取れなかった銘柄 225 件: 1332, 1605, 1721, 1801, 1802, 1803, 1808, 1812, 1925, 1928, 1963, 2002, 2269, 2282, 2413, 2432, 2501, 2502, 2503, 2768 ほか"
-  ]
+  "missing": []
 }
