@@ -1,0 +1,96 @@
+{
+  "today": "2026-11-09",
+  "market": [
+    {
+      "label": "日経225先物（CME・円建て）",
+      "ticker": "NIY=F",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "日経平均",
+      "ticker": "^N225",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "NYダウ",
+      "ticker": "^DJI",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "S&P500",
+      "ticker": "^GSPC",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "ナスダック総合",
+      "ticker": "^IXIC",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "フィラデルフィア半導体指数",
+      "ticker": "^SOX",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "VIX（恐怖指数）",
+      "ticker": "^VIX",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "ドル円",
+      "ticker": "JPY=X",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "米10年国債利回り",
+      "ticker": "^TNX",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "WTI原油",
+      "ticker": "CL=F",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    },
+    {
+      "label": "金",
+      "ticker": "GC=F",
+      "close": null,
+      "chg": null,
+      "date": "-"
+    }
+  ],
+  "missing": [
+    "日経225先物（CME・円建て）（NIY=F）",
+    "日経平均（^N225）",
+    "NYダウ（^DJI）",
+    "S&P500（^GSPC）",
+    "ナスダック総合（^IXIC）",
+    "フィラデルフィア半導体指数（^SOX）",
+    "VIX（恐怖指数）（^VIX）",
+    "ドル円（JPY=X）",
+    "米10年国債利回り（^TNX）",
+    "WTI原油（CL=F）",
+    "金（GC=F）",
+    "株価が取れなかった銘柄 225 件: 1332, 1605, 1721, 1801, 1802, 1803, 1808, 1812, 1925, 1928, 1963, 2002, 2269, 2282, 2413, 2432, 2501, 2502, 2503, 2768 ほか"
+  ]
+}
