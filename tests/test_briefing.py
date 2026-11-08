@@ -61,3 +61,55 @@ def test_render_contains_sections():
     assert "## 1. 主要指標" in md and "ダウ" in md and "-0.50%" in md
     assert "## 2. 持ち株の点検" in md and "+10.00%" in md
     assert "## 3. 日経225 値動きスクリーニング" in md and "トヨタ" in md
+
+
+from kabu.briefing import detect_cross, cross_lists, rank_value
+
+
+def test_detect_golden_cross():
+    c = [100.0] * 30 + [90.0] * 5 + [130.0, 140.0]   # 短期線が長期線を上抜け
+    assert detect_cross(c, 5, 25) == "GC"
+
+
+def test_detect_dead_cross():
+    c = [100.0] * 30 + [110.0] * 5 + [70.0, 60.0]
+    assert detect_cross(c, 5, 25) == "DC"
+
+
+def test_no_cross_or_too_short():
+    assert detect_cross([100.0 + i for i in range(40)], 5, 25) is None
+    assert detect_cross([100.0] * 20, 5, 25) is None
+
+
+def test_indicators_include_crosses():
+    ind = indicators(df([100.0] * 30 + [90.0] * 5 + [130.0, 140.0]))
+    assert ind["cross5_25"] == "GC" and ind["cross25_75"] is None
+
+
+def test_cross_lists():
+    ind = {"A": {"cross5_25": "GC", "cross25_75": None}, "B": {"cross5_25": None, "cross25_75": "DC"},
+           "C": {"cross5_25": "GC", "cross25_75": "GC"}, "D": None}
+    g = cross_lists(ind)
+    assert g["ゴールデンクロス"] == [("A", "5日/25日"), ("C", "5日/25日・25日/75日")]
+    assert g["デッドクロス"] == [("B", "25日/75日")]
+
+
+def test_rank_value():
+    f = {"A": {"per": 10.0, "pbr": 0.8, "roe": 9.0}, "B": {"per": 8.0, "pbr": 1.5, "roe": 12.0},
+         "C": {"per": 7.0, "pbr": 1.0, "roe": 10.0}, "D": {"per": 5.0, "pbr": 0.5, "roe": 3.0},
+         "E": {"per": None, "pbr": 0.7, "roe": 9.0}}
+    assert [c for c, _ in rank_value(f)] == ["C", "A"]
+
+
+def test_render_with_fundamentals_and_crosses():
+    x = {"chg1d": 5, "chg5d": 1, "vol_ratio": 1, "ma25_dev": 2, "rsi14": 50, "close": 1}
+    md = render_briefing("2026-11-10", [], [], {"上昇率": [("7203", x)]}, {"7203": "トヨタ"}, notes=[],
+                         fund={"7203": {"per": 9.5, "pbr": 0.9, "roe": 10.2, "equity_ratio": 38.0,
+                                        "div_yield": 3.1}},
+                         fund_date="2026-11-07",
+                         crosses={"ゴールデンクロス": [("7203", "5日/25日")], "デッドクロス": []},
+                         value=[("7203", {"per": 9.5, "pbr": 0.9, "roe": 10.2, "equity_ratio": 38.0,
+                                          "div_yield": 3.1})])
+    assert "9.5倍" in md and "0.90倍" in md
+    assert "### ゴールデンクロス" in md and "5日/25日" in md
+    assert "### 割安・好財務" in md and "38.0%" in md and "2026-11-07" in md

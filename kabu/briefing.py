@@ -2,7 +2,7 @@
 
 1. 主要指標（日経先物・米国株・為替・金利・原油など）の前日終値と騰落率
 2. 持ち株の点検（取得からの損益・直近の値動き）
-3. 日経225全銘柄の値動きスクリーニング（騰落・出来高急増・25日線乖離・RSI）
+3. 日経225全銘柄の値動きスクリーニング（騰落・出来高急増・25日線乖離・RSI・移動平均線のクロス・割安度）
 
 使い方: python -m kabu.briefing [--today 2026-11-10]
 数値はプログラムで取得するので、ニュース検索より優先して使うこと。
@@ -48,6 +48,29 @@ def _clean(df):
     return d if len(d) else None
 
 
+def _ma(c, n, end):
+    """c[:end] の末尾 n 本の平均（end は len(c) 以下）。"""
+    return sum(c[end - n:end]) / n
+
+
+def detect_cross(c: list[float], short: int, long: int, within: int = 3):
+    """直近 within 営業日内に短期線が長期線を上抜け→"GC"、下抜け→"DC"、なし→None。"""
+    if len(c) < long + within:
+        return None
+    signs = []
+    for k in range(within, -1, -1):
+        end = len(c) - k
+        diff = _ma(c, short, end) - _ma(c, long, end)
+        signs.append(1 if diff > 0 else (-1 if diff < 0 else 0))
+    result = None
+    for a, b in zip(signs, signs[1:]):
+        if a <= 0 < b:
+            result = "GC"
+        elif a >= 0 > b:
+            result = "DC"
+    return result
+
+
 def indicators(df) -> dict | None:
     """Close/Volume を持つ日足 DataFrame から指標を計算。26本未満なら None。"""
     d = _clean(df)
@@ -69,6 +92,8 @@ def indicators(df) -> dict | None:
         "vol_ratio": round(v[-1] / avg_vol, 2) if avg_vol else None,
         "ma25_dev": round((c[-1] / ma25 - 1) * 100, 2),
         "rsi14": rsi,
+        "cross5_25": detect_cross(c, 5, 25),
+        "cross25_75": detect_cross(c, 25, 75),
     }
 
 
@@ -79,6 +104,28 @@ def rank_candidates(ind: dict, n: int = 10) -> dict:
         items.sort(key=lambda t: t[1][key], reverse=desc)
         out[label] = items[:n]
     return out
+
+
+def cross_lists(ind: dict) -> dict:
+    out = {"ゴールデンクロス": [], "デッドクロス": []}
+    for code, x in ind.items():
+        if not x:
+            continue
+        for kind, label in (("GC", "ゴールデンクロス"), ("DC", "デッドクロス")):
+            lines = [name for key, name in (("cross5_25", "5日/25日"), ("cross25_75", "25日/75日"))
+                     if x.get(key) == kind]
+            if lines:
+                out[label].append((code, "・".join(lines)))
+    return out
+
+
+def rank_value(fund: dict, n: int = 10) -> list:
+    """割安・好財務：PBR1.2倍未満・ROE8%以上を PER の低い順に。"""
+    items = [(c, f) for c, f in fund.items()
+             if f and f.get("per") and f.get("pbr") is not None and f.get("roe") is not None
+             and f["pbr"] < 1.2 and f["roe"] >= 8]
+    items.sort(key=lambda t: t[1]["per"])
+    return items[:n]
 
 
 def holding_view(code: str, h: dict, ind: dict | None, bought: str | None) -> dict:
@@ -99,19 +146,27 @@ def _n(x, fmt="{:,.1f}") -> str:
     return "-" if x is None else fmt.format(x)
 
 
-def render_briefing(today, market, holdings, ranks, names, notes) -> str:
+def _x(x, fmt="{:.1f}倍") -> str:
+    return "-" if x is None else fmt.format(x)
+
+
+def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fund_date=None,
+                    crosses=None, value=None) -> str:
+    fund = fund or {}
+    fg = lambda code, k: (fund.get(code) or {}).get(k)
     L = [f"# 朝の資料 {today}", "", "数値はプログラムで取得した前営業日（米国は前夜）の終値です。ニュース検索の数値より優先してください。", ""]
     L += ["## 1. 主要指標", "", "| 指標 | 終値 | 前日比 | 日付 |", "|---|---:|---:|---|"]
     for m in market:
         L.append(f"| {m['label']} | {_n(m.get('close'), '{:,.2f}')} | {_p(m.get('chg'))} | {m.get('date', '-')} |")
     L += ["", "## 2. 持ち株の点検", ""]
     if holdings:
-        L += ["| 銘柄 | 株数 | 取得単価 | 直近終値 | 損益率 | 損益額 | 前日比 | 5日 | RSI14 | 25日線乖離 | 購入日 |",
-              "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
+        L += ["| 銘柄 | 株数 | 取得単価 | 直近終値 | 損益率 | 損益額 | 前日比 | 5日 | RSI14 | 25日線乖離 | PER | PBR | 購入日 |",
+              "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
         for h in holdings:
             L.append(f"| {h['name']}({h['code']}) | {h['shares']:,} | {_n(h['avg_cost'])} | {_n(h['close'])} | "
                      f"{_p(h['pl_pct'])} | {_n(h['pl_yen'], '{:+,}円')} | {_p(h['chg1d'])} | {_p(h['chg5d'])} | "
-                     f"{_n(h['rsi14'], '{:.0f}')} | {_p(h['ma25_dev'])} | {h['bought'] or '-'} |")
+                     f"{_n(h['rsi14'], '{:.0f}')} | {_p(h['ma25_dev'])} | {_x(fg(h['code'], 'per'))} | "
+                     f"{_x(fg(h['code'], 'pbr'), '{:.2f}倍')} | {h['bought'] or '-'} |")
         L += ["", "→ 各持ち株について、個別ニュース（決算・業績修正・不祥事・格付け変更など）を必ず検索して売り判断に使うこと。"]
     else:
         L.append("持ち株はありません。")
@@ -119,11 +174,29 @@ def render_briefing(today, market, holdings, ranks, names, notes) -> str:
           "買い候補探しの出発点です（上昇・出来高急増は材料が出ている可能性、下方乖離・RSI低は売られすぎの可能性）。",
           "ここに出た銘柄は、理由となるニュースを検索で確かめてから採用すること。", ""]
     for label, items in ranks.items():
-        L += [f"### {label}", "", "| 銘柄 | 終値 | 前日比 | 5日 | 出来高倍率 | 25日線乖離 | RSI14 |", "|---|---:|---:|---:|---:|---:|---:|"]
+        L += [f"### {label}", "", "| 銘柄 | 終値 | 前日比 | 5日 | 出来高倍率 | 25日線乖離 | RSI14 | PER | PBR |",
+              "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
         for code, x in items:
             L.append(f"| {names.get(code, '')}({code}) | {_n(x['close'])} | {_p(x['chg1d'])} | {_p(x['chg5d'])} | "
-                     f"{_n(x['vol_ratio'], '{:.1f}倍')} | {_p(x['ma25_dev'])} | {_n(x['rsi14'], '{:.0f}')} |")
+                     f"{_n(x['vol_ratio'], '{:.1f}倍')} | {_p(x['ma25_dev'])} | {_n(x['rsi14'], '{:.0f}')} | "
+                     f"{_x(fg(code, 'per'))} | {_x(fg(code, 'pbr'), '{:.2f}倍')} |")
         L.append("")
+    if crosses:
+        for label in ("ゴールデンクロス", "デッドクロス"):
+            items = crosses.get(label, [])
+            L += [f"### {label}（直近3営業日・移動平均線）", ""]
+            L += [f"- {names.get(c, '')}({c})：{lines}" for c, lines in items] or ["- なし"]
+            L.append("")
+    if value is not None:
+        L += [f"### 割安・好財務候補（PBR1.2倍未満・ROE8%以上、PER低い順。財務データ {fund_date or '未取得'} 時点）", "",
+              "| 銘柄 | PER | PBR | ROE | 自己資本比率 | 配当利回り |", "|---|---:|---:|---:|---:|---:|"]
+        for code, f in value:
+            L.append(f"| {names.get(code, '')}({code}) | {_x(f.get('per'))} | {_x(f.get('pbr'), '{:.2f}倍')} | "
+                     f"{_x(f.get('roe'), '{:.1f}%')} | {_x(f.get('equity_ratio'), '{:.1f}%')} | "
+                     f"{_x(f.get('div_yield'), '{:.2f}%')} |")
+        if not value:
+            L.append("| 該当なし | | | | | |")
+        L += ["", "→ 割安でも業績悪化中の「割安のわな」に注意。業績予想・進捗率・信用残は、候補に挙げる銘柄だけ株探などで確認すること。", ""]
     if notes:
         L += ["## 取得できなかったデータ", ""] + [f"- {n}" for n in notes]
     return "\n".join(L) + "\n"
@@ -159,7 +232,7 @@ def fetch_market() -> list[dict]:
 
 
 def fetch_indicators(codes: list[str]) -> dict:
-    frames = _frames([f"{c}.T" for c in codes], "3mo")
+    frames = _frames([f"{c}.T" for c in codes], "6mo")
     return {c: indicators(frames.get(f"{c}.T")) for c in codes}
 
 
@@ -198,7 +271,13 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     bought = _bought_dates(read_rows(root / "data" / "trades.csv"))
     holdings = [holding_view(c, h, ind.get(c), bought.get(c)) for c, h in state["holdings"].items()]
     ranks = rank_candidates({c: ind.get(c) for c in names})
-    md = render_briefing(today, market, holdings, ranks, names, notes)
+    from kabu.fundamentals import load_fundamentals
+    fund_date, fund = load_fundamentals(root / "data" / "fundamentals.csv")
+    if not fund:
+        notes.append("財務データ（data/fundamentals.csv）がまだありません")
+    md = render_briefing(today, market, holdings, ranks, names, notes, fund=fund, fund_date=fund_date,
+                         crosses=cross_lists({c: ind.get(c) for c in names}),
+                         value=rank_value({c: fund.get(c) for c in names}))
     return md, {"today": today, "market": market, "missing": notes}
 
 
