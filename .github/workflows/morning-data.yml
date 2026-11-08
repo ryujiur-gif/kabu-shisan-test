@@ -1,0 +1,44 @@
+name: 朝の株価データ準備
+
+on:
+  schedule:
+    - cron: "20 21 * * 0-4"   # 平日 6:20 JST（米国市場の引け後）
+  workflow_dispatch:
+    inputs:
+      today:
+        description: "日付（YYYY-MM-DD、空欄なら日本時間の今日）"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: morning-data
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q -r requirements.txt
+      - name: 売買の確定と朝の資料作成
+        run: |
+          if [ -n "${{ github.event.inputs.today }}" ]; then
+            python -m kabu.prepare --today "${{ github.event.inputs.today }}"
+          else
+            python -m kabu.prepare
+          fi
+      - name: 保存
+        run: |
+          git config user.name "kabu-shisan-test"
+          git config user.email "kabu-shisan-test@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git commit -m "朝の株価データ $(TZ=Asia/Tokyo date +%F)"
+          for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          exit 1

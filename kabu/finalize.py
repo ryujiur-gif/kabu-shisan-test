@@ -36,7 +36,9 @@ def run(today: str, root: Path, universe=None) -> tuple[int, list[str]]:
     site_url = json.loads(cfg_p.read_text(encoding="utf-8"))["site_url"] if cfg_p.exists() else ""
     (root / "out").mkdir(exist_ok=True)
     market = None
-    bp = root / "out" / "briefing.json"
+    bp = data / "daily" / today / "briefing.json"
+    if not bp.exists():
+        bp = root / "out" / "briefing.json"
     if bp.exists():
         b = json.loads(bp.read_text(encoding="utf-8"))
         if b.get("today") == today:

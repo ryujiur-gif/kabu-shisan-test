@@ -171,15 +171,11 @@ def _bought_dates(trades: list[dict]) -> dict:
     return out
 
 
-def main():
+def build(root: Path, today: str) -> tuple[str, dict]:
+    """朝の資料を作る。戻り値は (Markdown, {"today", "market"})。"""
     from kabu.picks import load_universe
-    from kabu.settle import jst_today, read_rows
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--today", default=None)
-    ap.add_argument("--root", default=".")
-    a = ap.parse_args()
-    root = Path(a.root)
-    today = a.today or jst_today().isoformat()
+    from kabu.settle import read_rows
+    root = Path(root)
     names = load_universe(root / "data" / "nikkei225.csv")
     state_p = root / "data" / "state.json"
     state = json.loads(state_p.read_text(encoding="utf-8")) if state_p.exists() else {"holdings": {}}
@@ -187,7 +183,8 @@ def main():
     try:
         market = fetch_market()
     except Exception as e:
-        market, _ = [], notes.append(f"主要指標の取得に失敗: {e}")
+        market = []
+        notes.append(f"主要指標の取得に失敗: {e}")
     notes += [f"{m['label']}（{m['ticker']}）" for m in market if m["close"] is None]
     codes = list(dict.fromkeys(list(names) + list(state["holdings"])))
     try:
@@ -202,10 +199,21 @@ def main():
     holdings = [holding_view(c, h, ind.get(c), bought.get(c)) for c, h in state["holdings"].items()]
     ranks = rank_candidates({c: ind.get(c) for c in names})
     md = render_briefing(today, market, holdings, ranks, names, notes)
+    return md, {"today": today, "market": market, "missing": notes}
+
+
+def main():
+    from kabu.settle import jst_today
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--today", default=None)
+    ap.add_argument("--root", default=".")
+    a = ap.parse_args()
+    root = Path(a.root)
+    today = a.today or jst_today().isoformat()
+    md, payload = build(root, today)
     (root / "out").mkdir(exist_ok=True)
     (root / "out" / "briefing.md").write_text(md, encoding="utf-8")
-    (root / "out" / "briefing.json").write_text(
-        json.dumps({"today": today, "market": market}, ensure_ascii=False, indent=2), encoding="utf-8")
+    (root / "out" / "briefing.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(md)
 
 
