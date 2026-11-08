@@ -183,13 +183,22 @@ def _x(x, fmt="{:.1f}倍") -> str:
 
 
 def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fund_date=None,
-                    crosses=None, value=None, peer=None) -> str:
+                    crosses=None, value=None, peer=None, regime=None) -> str:
     fund = fund or {}
     fg = lambda code, k: (fund.get(code) or {}).get(k)
     L = [f"# 朝の資料 {today}", "", "数値はプログラムで取得した前営業日（米国は前夜）の終値です。ニュース検索の数値より優先してください。", ""]
     L += ["## 1. 主要指標", "", "| 指標 | 終値 | 前日比 | 日付 |", "|---|---:|---:|---|"]
     for m in market:
         L.append(f"| {m['label']} | {_n(m.get('close'), '{:,.2f}')} | {_p(m.get('chg'))} | {m.get('date', '-')} |")
+    if regime:
+        from kabu.business_types import TYPE_GUIDE, TYPE_LABELS
+        fmt = lambda xs: "・".join(f"{t}{TYPE_LABELS[t]}" for t in xs) or "特になし"
+        L += ["", f"### 相場環境の目安：{regime['mood']}", "",
+              f"- 有利な型：{fmt(regime['favor'])}", f"- 不利な型：{fmt(regime['avoid'])}"]
+        L += [f"- {n}" for n in regime["notes"]]
+        L += ["", "銘柄名の〔 〕はビジネスモデルの型（業種からの目安。企業メモで見直し可）。", "",
+              "| 型 | 特徴と判断のポイント |", "|---|---|"]
+        L += [f"| {t}{TYPE_LABELS[t]} | {g} |" for t, g in TYPE_GUIDE.items()]
     L += ["", "## 2. 持ち株の点検", ""]
     if holdings:
         L += ["| 銘柄 | 株数 | 取得単価 | 直近終値 | 損益率 | 損益額 | 前日比 | 5日 | RSI14 | 25日線乖離 | PER | PBR | 購入日 |",
@@ -292,6 +301,7 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     from kabu.picks import load_universe
     from kabu.settle import read_rows
     root = Path(root)
+    from kabu.business_types import TYPE_LABELS, classify, market_regime
     names = load_universe(root / "data" / "nikkei225.csv")
     state_p = root / "data" / "state.json"
     state = json.loads(state_p.read_text(encoding="utf-8")) if state_p.exists() else {"holdings": {}}
@@ -321,7 +331,13 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     fund_date, fund = load_fundamentals(root / "data" / "fundamentals.csv")
     if not fund:
         notes.append("財務データ（data/fundamentals.csv）がまだありません")
+    types = {c: classify(c, sectors.get(c, "")) for c in names}
+    names = {c: f"{n}〔{types[c]}{TYPE_LABELS[types[c]]}〕" for c, n in names.items()}
+    for h in holdings:
+        t = classify(h["code"], sectors.get(h["code"], ""))
+        h["name"] = f"{h['name']}〔{t}{TYPE_LABELS[t]}〕"
     md = render_briefing(today, market, holdings, ranks, names, notes, fund=fund, fund_date=fund_date,
+                         regime=market_regime(market),
                          crosses=cross_lists({c: ind.get(c) for c in names}),
                          value=rank_value({c: fund.get(c) for c in names}),
                          peer=rank_peer_value({c: fund.get(c) for c in names}, sectors,

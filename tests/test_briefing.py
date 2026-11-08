@@ -127,3 +127,12 @@ def test_sector_medians_and_peer_rank():
     r = rank_peer_value(fund, sectors, med)
     assert [c for c, _ in r] == ["A"]          # 同業比で PER・PBR が低く ROE が中央値以上
     assert round(r[0][1]["per_vs_peer"], 1) == -33.3
+
+
+def test_render_regime_section():
+    md = render_briefing("2026-11-10", [], [], {}, {}, notes=[],
+                         regime={"mood": "リスクオフ（警戒）", "favor": ["③"], "avoid": ["⑤"],
+                                 "notes": ["VIX 28.0"]})
+    assert "### 相場環境の目安：リスクオフ（警戒）" in md
+    assert "有利な型：③ディフェンシブ型" in md and "不利な型：⑤グロース型" in md
+    assert "①ストック型" in md   # 型の解説表
