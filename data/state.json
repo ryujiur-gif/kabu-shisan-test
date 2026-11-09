@@ -1,6 +1,25 @@
 {
   "start_date": "2026-11-09",
-  "cash": 1000000,
-  "holdings": {},
-  "benchmark": {}
+  "cash": 903891,
+  "holdings": {
+    "9022": {
+      "name": "東海旅客鉄道",
+      "shares": 11,
+      "avg_cost": 4219.0
+    },
+    "8725": {
+      "name": "ＭＳ＆ＡＤインシュアランスグループホールディングス",
+      "shares": 10,
+      "avg_cost": 4970.0
+    }
+  },
+  "benchmark": {
+    "start_open": 57960.69921875,
+    "start_date": "2026-11-09"
+  },
+  "last_closes": {
+    "9022": 4350.0,
+    "8725": 5107.0
+  },
+  "last_date": "2026-11-09"
 }
