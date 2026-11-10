@@ -33,8 +33,11 @@ def test_too_many_sells():
     assert validate_order(o([("7203", "高"), ("6758", "中")], ["7203", "6758", "9984"]),
                           st("7203", "6758", "9984"), U)
 
-def test_must_sell_two_when_holding_two_or_more():
-    assert validate_order(o([("7203", "高"), ("6758", "中")], ["9984"]), st("9984", "7203"), U)
+def test_holding_without_selling_is_ok():
+    assert validate_order(o([("7203", "高"), ("6758", "中")]), st("9984", "7203"), U) == []
+
+def test_selling_one_of_many_is_ok():
+    assert validate_order(o([("7203", "高"), ("6758", "中")], ["9984"]), st("9984", "7203"), U) == []
 
 def test_duplicate_sell():
     assert validate_order(o([("7203", "高"), ("6758", "中")], ["9984", "9984"]), st("9984", "7203"), U)

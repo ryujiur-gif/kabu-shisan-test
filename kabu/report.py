@@ -50,7 +50,7 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None) 
             L.append(f"・{s['name']}（{s['code']}）全株売却")
             L.append(f"　理由：{s['reason']}")
     else:
-        L.append("・なし（持ち株なし）")
+        L.append("・なし（持ち株なし）" if not state.get("holdings") else "・なし（持ち株はすべて保有を継続）")
     L.append("※売買は本日の始値で成立したものとして記録します。")
 
     L += ["", "■ 前回の約定結果"]

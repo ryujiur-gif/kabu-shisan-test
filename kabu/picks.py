@@ -34,9 +34,8 @@ def validate_order(order: dict, state: dict, universe: dict, today: str | None =
             errs.append(f"買い {b.get('code')} は日経225の銘柄ではありません")
         if b.get("confidence") not in CONFIDENCES:
             errs.append(f"買い {b.get('code')} の期待度は 高/中/低 のいずれかにしてください")
-    need = min(2, len(held))
-    if len(sells) != need:
-        errs.append(f"売り銘柄は持ち株から{need}つにしてください（現在{len(sells)}）")
+    if len(sells) > 2:
+        errs.append(f"売り銘柄は0〜2つにしてください（現在{len(sells)}）")
     if len({s.get('code') for s in sells}) != len(sells):
         errs.append("売り銘柄が重複しています")
     for s in sells:
