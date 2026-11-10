@@ -3,7 +3,26 @@ from kabu.picks import load_universe, validate_order
 U = {"7203": "トヨタ", "6758": "ソニー", "9984": "SBG"}
 
 def st(*held):
-    return {"cash": 1, "holdings": {c: {"name": c, "shares": 1, "avg_cost": 1.0} for c in held}}
+    return {"cash": 1_000_000, "holdings": {c: {"name": c, "shares": 1, "avg_cost": 1.0} for c in held}}
+
+def test_cash_floor_enforced():
+    s = st(); s["cash"] = 250_000
+    s["holdings"] = {"9984": {"name": "x", "shares": 750, "avg_cost": 1000.0}}  # 総資産100万・現金25%
+    order = o([("7203", "高")]); order["holds"] = [{"code": "9984", "outlook": "横ばい", "reason": "r"}]
+    assert any("現金比率" in e for e in validate_order(order, s, U))   # 25%-20%=5% < 10%
+    order = o([("7203", "中")]); order["holds"] = [{"code": "9984", "outlook": "横ばい", "reason": "r"}]
+    assert validate_order(order, s, U) == []                           # 25%-10%=15%
+
+def test_selling_frees_cash_for_buy():
+    s = st(); s["cash"] = 100_000
+    s["holdings"] = {"9984": {"name": "x", "shares": 900, "avg_cost": 1000.0}}
+    assert validate_order(o([("7203", "高")], ["9984"]), s, U) == []
+
+def test_single_stock_cap():
+    s = st(); s["cash"] = 800_000
+    s["holdings"] = {"7203": {"name": "x", "shares": 200, "avg_cost": 1000.0}}  # 20%
+    order = o([("7203", "高")]); order["holds"] = [{"code": "7203", "outlook": "上昇", "reason": "r"}]
+    assert any("上限30%" in e for e in validate_order(order, s, U))
 
 def o(buys, sells=()):
     return {"date": "2026-11-10", "summary": "s",

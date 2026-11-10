@@ -136,3 +136,13 @@ def test_render_regime_section():
     assert "### 相場環境の目安：リスクオフ（警戒）" in md
     assert "有利な型：③ディフェンシブ型" in md and "不利な型：⑤グロース型" in md
     assert "①ストック型" in md   # 型の解説表
+
+
+def test_funds_lines_shows_cash_ratio_and_target():
+    from kabu.briefing import funds_lines
+    from kabu.ledger import funds
+    st = {"cash": 150_000, "holdings": {"7203": {"name": "トヨタ", "shares": 850, "avg_cost": 1000.0}}}
+    text = "\n".join(funds_lines(funds(st), [{"code": "7203", "name": "トヨタ"}], "中立"))
+    assert "総資産：1,000,000円" in text and "現金比率：15%" in text
+    assert "目安 30%〜50%" in text and "目安より少ない" in text
+    assert "新しい買いに使える額（現金を総資産の10%残す）：50,000円" in text and "トヨタ 85%" in text

@@ -3,7 +3,7 @@ import html as H
 import json
 from datetime import date
 
-from kabu.ledger import START_CASH, amount_for
+from kabu.ledger import RATIOS, START_CASH, amount_for, funds
 from kabu.picks import OUTLOOK_WORDS
 
 _TAG_CLASS = {"買": "up", "売": "down"}
@@ -43,9 +43,13 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None) 
                 chg = "" if m.get("chg") is None else f"（{'+' if m['chg'] >= 0 else ''}{m['chg']:.2f}%）"
                 L.append(f"・{m['label']} {m['close']:,.2f}{chg}")
         L.append("")
+    f = funds(state)
+    if f["total"] > 0:
+        L += ["【資金状況（前日終値）】",
+              f"総資産 {_yen(f['total'])}　現金 {_yen(f['cash'])}（{f['cash_ratio']:.0%}）　株式 {_yen(f['stock_value'])}", ""]
     L.append("【買い】")
     for b in order["buys"]:
-        L.append(f"・{b['name']}（{b['code']}）期待度：{b['confidence']}　予定額：{_man(amount_for(b['confidence']))}")
+        L.append(f"・{b['name']}（{b['code']}）期待度：{b['confidence']}　予定額：{_yen(amount_for(b['confidence'], f['total']))}（総資産の{int(RATIOS[b['confidence']] * 100)}%）")
         L.append(f"　理由：{b['reason']}")
     if not order["buys"]:
         L.append("・なし（本日は買いの基準を満たす銘柄なし）")

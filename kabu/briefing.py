@@ -182,8 +182,37 @@ def _x(x, fmt="{:.1f}倍") -> str:
     return "-" if x is None else fmt.format(x)
 
 
+CASH_TARGETS = {"リスクオン（強気）": (0.20, 0.40), "中立": (0.30, 0.50), "リスクオフ（警戒）": (0.50, 0.80)}
+
+
+def cash_target(mood: str) -> tuple[float, float]:
+    """相場環境ごとの現金比率の目安（下限, 上限）。判断材料不足のときは中立扱い。"""
+    return CASH_TARGETS.get(mood, CASH_TARGETS["中立"])
+
+
+def funds_lines(f: dict, holdings: list, mood: str) -> list[str]:
+    from kabu.ledger import MAX_STOCK_RATIO, MIN_CASH_RATIO, amount_for
+    total = f["total"]
+    lo, hi = cash_target(mood)
+    ratio = f["cash_ratio"]
+    state_word = "目安より少ない（買いは控えめに。入れ替えの売りも検討）" if ratio < lo else \
+        "目安より多い（基準を満たす銘柄があれば買ってよい）" if ratio > hi else "目安の範囲内"
+    usable = max(f["cash"] - int(total * MIN_CASH_RATIO), 0)
+    names = {h["code"]: h["name"] for h in holdings}
+    L = ["", "### 資金状況（前営業日終値で評価）", "",
+         f"- 総資産：{total:,}円（現金 {f['cash']:,}円 ＋ 株式 {f['stock_value']:,}円）",
+         f"- 現金比率：{ratio:.0%}　相場環境「{mood or '-'}」での目安 {lo:.0%}〜{hi:.0%} → **{state_word}**",
+         f"- 期待度ごとの購入予定額（総資産比）：高 {amount_for('高', total):,}円（20%）／中 {amount_for('中', total):,}円（10%）／低 {amount_for('低', total):,}円（5%）",
+         f"- 新しい買いに使える額（現金を総資産の{MIN_CASH_RATIO:.0%}残す）：{usable:,}円",
+         f"- 1銘柄の上限：総資産の{MAX_STOCK_RATIO:.0%}（{int(total * MAX_STOCK_RATIO):,}円）"]
+    if f["weights"]:
+        L.append("- 銘柄ごとの比率：" + "／".join(
+            f"{names.get(c, c)} {w:.0%}" for c, w in sorted(f["weights"].items(), key=lambda x: -x[1])))
+    return L
+
+
 def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fund_date=None,
-                    crosses=None, value=None, peer=None, regime=None) -> str:
+                    crosses=None, value=None, peer=None, regime=None, funds_info=None) -> str:
     fund = fund or {}
     fg = lambda code, k: (fund.get(code) or {}).get(k)
     L = [f"# 朝の資料 {today}", "", "数値はプログラムで取得した前営業日（米国は前夜）の終値です。ニュース検索の数値より優先してください。", ""]
@@ -199,6 +228,8 @@ def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fun
         L += ["", "銘柄名の〔 〕はビジネスモデルの型（業種からの目安。企業メモで見直し可）。", "",
               "| 型 | 特徴と判断のポイント |", "|---|---|"]
         L += [f"| {t}{TYPE_LABELS[t]} | {g} |" for t, g in TYPE_GUIDE.items()]
+    if funds_info:
+        L += funds_lines(funds_info, holdings, (regime or {}).get("mood", ""))
     L += ["", "## 2. 持ち株の点検", ""]
     if holdings:
         L += ["| 銘柄 | 株数 | 取得単価 | 直近終値 | 損益率 | 損益額 | 前日比 | 5日 | RSI14 | 25日線乖離 | PER | PBR | 購入日 |",
@@ -336,8 +367,11 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     for h in holdings:
         t = classify(h["code"], sectors.get(h["code"], ""))
         h["name"] = f"{h['name']}〔{t}{TYPE_LABELS[t]}〕"
+    from kabu.ledger import funds
+    funds_info = funds(state, {h["code"]: h["close"] for h in holdings if h.get("close")}) \
+        if "cash" in state else None
     md = render_briefing(today, market, holdings, ranks, names, notes, fund=fund, fund_date=fund_date,
-                         regime=market_regime(market),
+                         regime=market_regime(market), funds_info=funds_info,
                          crosses=cross_lists({c: ind.get(c) for c in names}),
                          value=rank_value({c: fund.get(c) for c in names}),
                          peer=rank_peer_value({c: fund.get(c) for c in names}, sectors,

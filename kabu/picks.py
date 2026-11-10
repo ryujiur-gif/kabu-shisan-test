@@ -49,6 +49,30 @@ def validate_order(order: dict, state: dict, universe: dict, today: str | None =
     if not str(order.get("summary", "")).strip():
         errs.append("市況の要約(summary)が空です")
     errs += _check_holds(order.get("holds", []), held, {s.get("code") for s in sells})
+    if not errs:
+        errs += check_funds(order, state)
+    return errs
+
+
+def check_funds(order: dict, state: dict) -> list[str]:
+    """総資産に対して、買った後の現金比率と1銘柄の比率が上限・下限を守っているか（前日終値で試算）。"""
+    from kabu.ledger import MAX_STOCK_RATIO, MIN_CASH_RATIO, amount_for, funds
+    f = funds(state)
+    total = f["total"]
+    if total <= 0:
+        return []
+    sold = {s["code"] for s in order["sells"]}
+    cash = f["cash"] + sum(f["values"][c] for c in sold if c in f["values"])
+    errs = []
+    for b in order["buys"]:
+        amt = amount_for(b["confidence"], total)
+        cash -= amt
+        after = (0 if b["code"] in sold else f["values"].get(b["code"], 0)) + amt
+        if after > total * MAX_STOCK_RATIO:
+            errs.append(f"買い {b['code']} の保有額が総資産の{after / total:.0%}になります（上限{MAX_STOCK_RATIO:.0%}）。期待度を下げるか見送ってください")
+    if order["buys"] and cash < total * MIN_CASH_RATIO:
+        errs.append(f"買った後の現金比率が{max(cash, 0) / total:.0%}になります（下限{MIN_CASH_RATIO:.0%}）。"
+                    "期待度を下げる・銘柄数を減らす・持ち株を入れ替える（売る）のいずれかにしてください")
     return errs
 
 

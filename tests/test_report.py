@@ -25,7 +25,9 @@ def test_body_contents():
     body = build_email(ORDER, STATE, HIST, TRADES, "https://example.github.io/k/")["body"]
     assert "+23,456円" in body and "+2.35%" in body
     assert "日経平均" in body and "https://example.github.io/k/" in body
-    assert "20万円" in body and "5万円" in body
+    # 総資産 = 現金80万 + 9984 10株×21,000 = 101万円 → 高20% / 低5%
+    assert "202,000円（総資産の20%）" in body and "50,000円（総資産の5%）" in body
+    assert "【資金状況（前日終値）】" in body and "総資産 1,010,000円" in body and "（79%）" in body
     assert body.rstrip().endswith("※試験運用です。投資判断はご自身の責任で行ってください。")
 
 def test_body_shows_hold_outlook_and_no_buys():
