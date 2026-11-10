@@ -17,8 +17,22 @@ def test_universe_has_225():
 def test_valid_order():
     assert validate_order(o([("7203", "高"), ("6758", "低")], ["9984"]), st("9984"), U) == []
 
-def test_buys_must_be_two():
-    assert validate_order(o([("7203", "高")]), st(), U)
+def test_zero_or_one_buy_is_ok():
+    assert validate_order(o([]), st(), U) == []
+    assert validate_order(o([("7203", "高")]), st(), U) == []
+
+def test_three_buys_rejected():
+    assert validate_order(o([("7203", "高"), ("6758", "中"), ("9984", "低")]), st(), U)
+
+def test_hold_outlook_required_for_unsold_holdings():
+    errs = validate_order(o([], ["9984"]), st("9984", "7203"), U)
+    assert any("7203" in e and "見通し" in e for e in errs)
+
+def test_hold_outlook_must_be_valid():
+    order = o([], ["9984"]); order["holds"] = [{"code": "7203", "outlook": "爆上げ", "reason": "r"}]
+    assert validate_order(order, st("9984", "7203"), U)
+    order["holds"][0]["outlook"] = "下落"
+    assert validate_order(order, st("9984", "7203"), U) == []
 
 def test_bad_confidence():
     assert validate_order(o([("7203", "超"), ("6758", "中")]), st(), U)
@@ -33,11 +47,20 @@ def test_too_many_sells():
     assert validate_order(o([("7203", "高"), ("6758", "中")], ["7203", "6758", "9984"]),
                           st("7203", "6758", "9984"), U)
 
+def hold(*codes, outlook="横ばい"):
+    return [{"code": c, "name": c, "outlook": outlook, "reason": "r"} for c in codes]
+
 def test_holding_without_selling_is_ok():
-    assert validate_order(o([("7203", "高"), ("6758", "中")]), st("9984", "7203"), U) == []
+    order = o([("7203", "高"), ("6758", "中")]); order["holds"] = hold("9984", "7203", outlook="上昇")
+    assert validate_order(order, st("9984", "7203"), U) == []
 
 def test_selling_one_of_many_is_ok():
-    assert validate_order(o([("7203", "高"), ("6758", "中")], ["9984"]), st("9984", "7203"), U) == []
+    order = o([("7203", "高"), ("6758", "中")], ["9984"]); order["holds"] = hold("7203")
+    assert validate_order(order, st("9984", "7203"), U) == []
+
+def test_sold_stock_must_not_be_in_holds():
+    order = o([], ["9984"]); order["holds"] = hold("9984", "7203")
+    assert validate_order(order, st("9984", "7203"), U)
 
 def test_duplicate_sell():
     assert validate_order(o([("7203", "高"), ("6758", "中")], ["9984", "9984"]), st("9984", "7203"), U)

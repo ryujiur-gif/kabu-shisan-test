@@ -3,6 +3,8 @@ import csv
 from pathlib import Path
 
 CONFIDENCES = ("高", "中", "低")
+OUTLOOKS = ("上昇", "横ばい", "下落")
+OUTLOOK_WORDS = {"上昇": "まだ上がりそう", "横ばい": "横ばい", "下落": "まだ下がりそう"}
 
 
 def load_universe(path="data/nikkei225.csv") -> dict[str, str]:
@@ -25,8 +27,8 @@ def validate_order(order: dict, state: dict, universe: dict, today: str | None =
         if not str(x.get("name", "")).strip():
             errs.append(f"{x.get('code')} の name（銘柄名）が空です")
     held = state["holdings"]
-    if len(buys) != 2:
-        errs.append(f"買い銘柄は2つにしてください（現在{len(buys)}）")
+    if len(buys) > 2:
+        errs.append(f"買い銘柄は0〜2つにしてください（現在{len(buys)}）")
     if len({b.get('code') for b in buys}) != len(buys):
         errs.append("買い銘柄が重複しています")
     for b in buys:
@@ -46,6 +48,30 @@ def validate_order(order: dict, state: dict, universe: dict, today: str | None =
             errs.append(f"{x.get('code')} の理由が空です")
     if not str(order.get("summary", "")).strip():
         errs.append("市況の要約(summary)が空です")
+    errs += _check_holds(order.get("holds", []), held, {s.get("code") for s in sells})
+    return errs
+
+
+def _check_holds(holds, held: dict, sold: set) -> list[str]:
+    """売らない持ち株すべてに、見通し（上昇/横ばい/下落）と理由があるかを確認する。"""
+    if not isinstance(holds, list) or not all(isinstance(x, dict) for x in holds):
+        return ["holds は銘柄({...})のリストにしてください"]
+    errs = []
+    by_code = {x.get("code"): x for x in holds}
+    for code, h in held.items():
+        if code in sold:
+            continue
+        x = by_code.get(code)
+        if x is None:
+            errs.append(f"持ち株 {code}（{h.get('name', '')}）の見通しが holds にありません")
+            continue
+        if x.get("outlook") not in OUTLOOKS:
+            errs.append(f"持ち株 {code} の見通し(outlook)は 上昇/横ばい/下落 のいずれかにしてください")
+        if not str(x.get("reason", "")).strip():
+            errs.append(f"持ち株 {code} の見通しの理由が空です")
+    for code in by_code:
+        if code not in held or code in sold:
+            errs.append(f"holds の {code} は売らない持ち株ではありません")
     return errs
 
 

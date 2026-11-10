@@ -4,6 +4,9 @@ import json
 from datetime import date
 
 from kabu.ledger import START_CASH, amount_for
+from kabu.picks import OUTLOOK_WORDS
+
+_TAG_CLASS = {"買": "up", "売": "down"}
 
 NOTE = "※試験運用です。投資判断はご自身の責任で行ってください。"
 
@@ -44,6 +47,8 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None) 
     for b in order["buys"]:
         L.append(f"・{b['name']}（{b['code']}）期待度：{b['confidence']}　予定額：{_man(amount_for(b['confidence']))}")
         L.append(f"　理由：{b['reason']}")
+    if not order["buys"]:
+        L.append("・なし（本日は買いの基準を満たす銘柄なし）")
     L += ["", "【売り】"]
     if order["sells"]:
         for s in order["sells"]:
@@ -51,6 +56,13 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None) 
             L.append(f"　理由：{s['reason']}")
     else:
         L.append("・なし（持ち株なし）" if not state.get("holdings") else "・なし（持ち株はすべて保有を継続）")
+    holds = order.get("holds") or []
+    if holds:
+        L += ["", "【持ち株の見通し（保有継続）】"]
+        for x in holds:
+            name = x.get("name") or state.get("holdings", {}).get(x["code"], {}).get("name", "")
+            L.append(f"・{name}（{x['code']}）{OUTLOOK_WORDS.get(x['outlook'], x['outlook'])}")
+            L.append(f"　理由：{x['reason']}")
     L.append("※売買は本日の始値で成立したものとして記録します。")
 
     L += ["", "■ 前回の約定結果"]
@@ -147,8 +159,10 @@ def build_site(state, history_rows, trades_rows, order) -> str:
     if order:
         items = [("買", b["name"], b["code"], f"期待度 {b['confidence']}", b["reason"]) for b in order["buys"]]
         items += [("売", s["name"], s["code"], "全株売却", s["reason"]) for s in order["sells"]]
+        items += [("保有", x.get("name", ""), x["code"], OUTLOOK_WORDS.get(x["outlook"], x["outlook"]), x["reason"])
+                  for x in order.get("holds") or []]
         picks = f"<p class='summary'>{_e(order['summary'])}</p>" + "".join(
-            f"<div class='pick'><span class='tag {'up' if k == '買' else 'down'}'>{k}</span>"
+            f"<div class='pick'><span class='tag {_TAG_CLASS.get(k, '')}'>{k}</span>"
             f"<b>{_e(n)}</b> <small>{_e(c)}・{_e(m)}</small><p>{_e(r)}</p></div>" for k, n, c, m, r in items)
 
     return f"""<!doctype html>

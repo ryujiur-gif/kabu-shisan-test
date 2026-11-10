@@ -5,7 +5,8 @@ from kabu.finalize import run as finalize_run
 ORDER = {"date": "2026-11-10", "summary": "米株高で輸出株に追い風。",
          "buys": [{"code": "7203", "name": "トヨタ自動車", "confidence": "高", "reason": "円安"},
                   {"code": "6758", "name": "ソニーグループ", "confidence": "低", "reason": "決算"}],
-         "sells": []}
+         "sells": [],
+         "holds": [{"code": "9984", "name": "ソフトバンクグループ", "outlook": "上昇", "reason": "AI需要"}]}
 STATE = {"start_date": "2026-11-09", "cash": 800000,
          "holdings": {"9984": {"name": "ソフトバンクグループ", "shares": 10, "avg_cost": 20000.0}},
          "last_closes": {"9984": 21000.0}, "benchmark": {"start_open": 50000.0}}
@@ -27,6 +28,11 @@ def test_body_contents():
     assert "20万円" in body and "5万円" in body
     assert body.rstrip().endswith("※試験運用です。投資判断はご自身の責任で行ってください。")
 
+def test_body_shows_hold_outlook_and_no_buys():
+    body = build_email(dict(ORDER, buys=[]), STATE, HIST, TRADES, "u")["body"]
+    assert "・なし（本日は買いの基準を満たす銘柄なし）" in body
+    assert "【持ち株の見通し（保有継続）】" in body and "ソフトバンクグループ（9984）まだ上がりそう" in body
+
 def test_body_before_first_history():
     body = build_email(ORDER, STATE, [], [], "u")["body"]
     assert "1,000,000円" in body
@@ -38,14 +44,14 @@ def test_site_html():
 def test_finalize_rejects_bad_order(tmp_path):
     (tmp_path / "data" / "orders").mkdir(parents=True)
     (tmp_path / "data" / "state.json").write_text(json.dumps(STATE), encoding="utf-8")
-    bad = dict(ORDER, buys=ORDER["buys"][:1])
+    bad = dict(ORDER, holds=[])
     (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(bad), encoding="utf-8")
     code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""}, check_note_files=False)
     assert code == 1 and errs
 
 def test_finalize_writes_outputs(tmp_path):
     (tmp_path / "data" / "orders").mkdir(parents=True)
-    st = dict(STATE, holdings={})
+    st = STATE
     (tmp_path / "data" / "state.json").write_text(json.dumps(st), encoding="utf-8")
     (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
     code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""}, check_note_files=False)
@@ -63,7 +69,7 @@ def test_email_market_section():
 def test_finalize_uses_briefing_json(tmp_path):
     (tmp_path / "data" / "orders").mkdir(parents=True)
     (tmp_path / "out").mkdir()
-    st = dict(STATE, holdings={})
+    st = STATE
     (tmp_path / "data" / "state.json").write_text(json.dumps(st), encoding="utf-8")
     (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
     (tmp_path / "out" / "briefing.json").write_text(json.dumps({"today": "2026-11-10", "market": [
@@ -74,7 +80,7 @@ def test_finalize_uses_briefing_json(tmp_path):
 
 def test_finalize_requires_notes(tmp_path):
     (tmp_path / "data" / "orders").mkdir(parents=True)
-    (tmp_path / "data" / "state.json").write_text(json.dumps(dict(STATE, holdings={})), encoding="utf-8")
+    (tmp_path / "data" / "state.json").write_text(json.dumps(STATE), encoding="utf-8")
     (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
     code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
     assert code == 1 and any("企業メモ" in e for e in errs)
