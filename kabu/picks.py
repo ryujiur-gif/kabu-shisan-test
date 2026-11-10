@@ -99,6 +99,32 @@ def _check_holds(holds, held: dict, sold: set) -> list[str]:
     return errs
 
 
+UNKNOWN_WORDS = ("不明", "確認できず", "未確認", "調査できず", "見つからず")
+
+
+def note_quality(text: str) -> tuple[int, int]:
+    """企業メモの箇条書き（「- 」で始まる行）のうち、「不明」などで済ませた行の数と総数。"""
+    items = [l for l in text.splitlines() if l.strip().startswith("- ")]
+    unknown = [l for l in items if any(w in l for w in UNKNOWN_WORDS)]
+    return len(unknown), len(items)
+
+
+def check_note_quality(order: dict, notes_dir, max_ratio: float = 0.5) -> tuple[list[str], list[str]]:
+    """「不明」が半数を超える企業メモは、買い銘柄ならエラー、売り銘柄なら警告。"""
+    errs, warns = [], []
+    for kind, items in (("買い", order.get("buys", [])), ("売り", order.get("sells", []))):
+        for x in items:
+            p = Path(notes_dir) / f"{x.get('code')}.md"
+            if not p.exists():
+                continue
+            u, n = note_quality(p.read_text(encoding="utf-8"))
+            if n and u / n > max_ratio:
+                msg = (f"{kind} {x.get('code')} の企業メモは {n} 項目中 {u} 項目が「不明」です。"
+                       "会社の IR ページ・決算説明資料・株探などを WebFetch で開いて調べ直し、埋めてください")
+                (errs if kind == "買い" else warns).append(msg)
+    return errs, warns
+
+
 def check_notes(order: dict, notes_dir, today: str, max_age_days: int = 90) -> list[str]:
     """買い・売り銘柄の企業メモ（data/notes/<コード>.md）があり、更新日が新しいかを確認する。"""
     import re

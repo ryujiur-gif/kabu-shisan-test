@@ -146,3 +146,29 @@ def test_funds_lines_shows_cash_ratio_and_target():
     assert "総資産：1,000,000円" in text and "現金比率：15%" in text
     assert "目安 30%〜50%" in text and "目安より少ない" in text
     assert "新しい買いに使える額（現金を総資産の10%残す）：50,000円" in text and "トヨタ 85%" in text
+
+
+def test_drop_today_removes_intraday_bar():
+    from kabu.briefing import drop_today
+    from datetime import date
+    d = df([100.0] * 5)                       # 2026-08-03 〜 08-07（営業日）
+    kept = drop_today(d, date(2026, 8, 7))
+    assert len(kept) == 4 and kept.index[-1].date() == date(2026, 8, 6)
+    assert len(drop_today(d, date(2026, 8, 10))) == 5
+    assert drop_today(None, date(2026, 8, 7)) is None
+
+
+def test_futures_gap_and_line():
+    from kabu.briefing import futures_gap, gap_line
+    m = [{"label": "日経225先物", "ticker": "NIY=F", "close": 60980.0},
+         {"label": "日経平均", "ticker": "^N225", "close": 58775.5}]
+    g = futures_gap(m)
+    assert g["gap"] == 3.75 and "+3.75%" in gap_line(g)
+    assert futures_gap(m[:1]) is None and gap_line(None) is None
+
+
+def test_render_gap_and_events():
+    md = render_briefing("2026-11-10", [], [], {}, {}, notes=[],
+                         gap={"futures": 60980.0, "nikkei": 58775.5, "gap": 3.75},
+                         events_md=["", "### 今週・来週の主な予定（data/events.csv より）", "", "- 11/13 SQ"])
+    assert "寄り付きの目安" in md and "+3.75%" in md and "- 11/13 SQ" in md

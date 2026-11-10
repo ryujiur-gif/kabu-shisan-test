@@ -96,10 +96,12 @@ def run(today: date, data_dir: Path, fetch=None) -> dict:
         d = date.fromisoformat(o["date"])
         codes = [x["code"] for x in o.get("buys", []) + o.get("sells", [])]
         got = get_day_prices(codes, d, fetch=fetch) if is_trading_day(d) else {}
-        if codes and not got:
+        missing = [c for c in dict.fromkeys(codes) if c not in got]
+        if missing:
             if d == p:
-                return error(f"{d} の株価を取得できませんでした（{f.name}）")
-            notes.append(f"{f.name} は株価が取得できないため取消にしました")
+                # 直近分は一部でも欠けたら何も書かず、次回に取り直す（黙って取消にしない）
+                return error(f"{d} の株価を取得できませんでした（{f.name}：{', '.join(missing)}）。次回に取り直します")
+            notes.append(f"{f.name} の {', '.join(missing)} は株価が取得できないため取消にしました")
         opens_by_date[o["date"]] = {c: v["open"] for c, v in got.items()}
     nikkei = get_nikkei(p, fetch=fetch)
     if not nikkei:

@@ -86,3 +86,36 @@ def test_finalize_requires_notes(tmp_path):
     (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
     code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""})
     assert code == 1 and any("企業メモ" in e for e in errs)
+
+
+def test_email_notices_and_gap():
+    e = build_email(ORDER, STATE, HIST, TRADES, "u", market=[{"label": "NYダウ", "close": 1.0, "chg": 0.1}],
+                    notices=["本日は株価データの一部を取得できませんでした（金）"],
+                    gap={"futures": 60980.0, "nikkei": 58775.5, "gap": 3.75})
+    body = e["body"]
+    assert body.startswith("■ 本日（11/10）の予想\n\n※本日は株価データの一部を取得できませんでした（金）\n\n【市況】")
+    assert "・寄り付きの目安：日経先物は前日の日経平均終値より +3.75%" in body
+
+
+def test_finalize_adds_notices_automatically(tmp_path):
+    (tmp_path / "data" / "orders").mkdir(parents=True)
+    daily = tmp_path / "data" / "daily" / "2026-11-10"
+    daily.mkdir(parents=True)
+    (tmp_path / "data" / "state.json").write_text(json.dumps(STATE), encoding="utf-8")
+    (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
+    (daily / "settle.json").write_text(json.dumps({"status": "price_error"}), encoding="utf-8")
+    (daily / "briefing.json").write_text(json.dumps({"today": "2026-11-10", "market": [],
+                                                     "missing": ["金（GC=F）"], "gap": None}), encoding="utf-8")
+    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""}, check_note_files=False)
+    assert code == 0
+    body = json.loads((tmp_path / "out" / "email.json").read_text(encoding="utf-8"))["body"]
+    assert "※本日は株価データの取得に失敗したため" in body and "※本日は株価データの一部を取得できませんでした（金（GC=F））" in body
+
+
+def test_finalize_notice_when_no_settle_file(tmp_path):
+    (tmp_path / "data" / "orders").mkdir(parents=True)
+    (tmp_path / "data" / "state.json").write_text(json.dumps(STATE), encoding="utf-8")
+    (tmp_path / "data" / "orders" / "2026-11-10.json").write_text(json.dumps(ORDER), encoding="utf-8")
+    code, errs = finalize_run("2026-11-10", tmp_path, universe={"7203": "", "6758": ""}, check_note_files=False)
+    body = json.loads((tmp_path / "out" / "email.json").read_text(encoding="utf-8"))["body"]
+    assert code == 0 and "※本日は株価データの準備が間に合わなかったため" in body

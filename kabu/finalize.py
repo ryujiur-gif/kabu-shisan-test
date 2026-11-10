@@ -8,12 +8,30 @@ import json
 import sys
 from pathlib import Path
 
-from kabu.picks import check_notes, load_universe, validate_order
+from kabu.picks import check_note_quality, check_notes, load_universe, validate_order
 from kabu.report import build_email, build_site
 from kabu.settle import jst_today, read_rows
 
 
-def run(today: str, root: Path, universe=None, check_note_files: bool = True) -> tuple[int, list[str]]:
+def notices_for(today: str, data: Path, briefing: dict | None) -> list[str]:
+    """メール本文の先頭に付ける注記（データ未準備・取得失敗・一部欠け）をプログラムで決める。"""
+    out = []
+    sp = data / "daily" / today / "settle.json"
+    if not sp.exists():
+        out.append("本日は株価データの準備が間に合わなかったため、数値データなしで判断しています。売買の確定は次回にまとめて行います")
+    else:
+        try:
+            if json.loads(sp.read_text(encoding="utf-8")).get("status") == "price_error":
+                out.append("本日は株価データの取得に失敗したため、前回分の約定・評価は次回にまとめて反映します")
+        except json.JSONDecodeError:
+            pass
+    missing = (briefing or {}).get("missing") or []
+    if missing:
+        out.append("本日は株価データの一部を取得できませんでした（" + "／".join(m[:40] for m in missing[:3]) + "）")
+    return out
+
+
+def run(today: str, root: Path, universe=None, check_note_files: bool = True, warn=None) -> tuple[int, list[str]]:
     root = Path(root)
     data = root / "data"
     state = json.loads((data / "state.json").read_text(encoding="utf-8"))
@@ -28,6 +46,10 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True) ->
     errs = validate_order(order, state, universe, today=today)
     if not errs and check_note_files:
         errs = check_notes(order, data / "notes", today)
+        if not errs:
+            errs, warns = check_note_quality(order, data / "notes")
+            for w in warns:
+                (warn or (lambda m: None))(w)
     if errs:
         return 1, errs
     hist = read_rows(data / "history.csv")
@@ -37,16 +59,20 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True) ->
     cfg_p = root / "config.json"
     site_url = json.loads(cfg_p.read_text(encoding="utf-8"))["site_url"] if cfg_p.exists() else ""
     (root / "out").mkdir(exist_ok=True)
-    market = None
+    market, gap, b = None, None, None
     bp = data / "daily" / today / "briefing.json"
     if not bp.exists():
         bp = root / "out" / "briefing.json"
     if bp.exists():
         b = json.loads(bp.read_text(encoding="utf-8"))
         if b.get("today") == today:
-            market = b.get("market")
+            market, gap = b.get("market"), b.get("gap")
+        else:
+            b = None
+    notices = notices_for(today, data, b)
     (root / "out" / "email.json").write_text(
-        json.dumps(build_email(order, state, hist, last, site_url, market=market), ensure_ascii=False, indent=2),
+        json.dumps(build_email(order, state, hist, last, site_url, market=market, notices=notices, gap=gap),
+                   ensure_ascii=False, indent=2),
         encoding="utf-8")
     (root / "docs").mkdir(exist_ok=True)
     (root / "docs" / "index.html").write_text(build_site(state, hist, trades, order), encoding="utf-8")
@@ -58,7 +84,7 @@ def main():
     ap.add_argument("--today", default=None)
     ap.add_argument("--root", default=".")
     a = ap.parse_args()
-    code, errs = run(a.today or jst_today().isoformat(), Path(a.root))
+    code, errs = run(a.today or jst_today().isoformat(), Path(a.root), warn=lambda m: print("警告:", m))
     for e in errs:
         print("エラー:", e)
     if code == 0:

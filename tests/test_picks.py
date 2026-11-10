@@ -136,3 +136,22 @@ def test_check_notes_bad_date(tmp_path):
     _note(tmp_path, "6758", "2026-11-01")
     errs = check_notes(o([("7203", "高"), ("6758", "中")]), tmp_path, "2026-11-10")
     assert any("7203" in e and "更新日" in e for e in errs)
+
+
+def test_note_quality_counts_unknown_items():
+    from kabu.picks import note_quality
+    text = "# メモ\n更新日：2026-11-10\n## 1\n- 社長：不明\n- 計画：中計あり\n（注）\n- 不祥事：確認できず\n- 配当：5年連続増配\n"
+    assert note_quality(text) == (2, 4)
+
+
+def test_check_note_quality_errors_for_buys_warns_for_sells(tmp_path):
+    from kabu.picks import check_note_quality
+    poor = "# x\n更新日：2026-11-10\n- a：不明\n- b：不明\n- c：確認できず\n- d：ある\n"
+    good = "# x\n更新日：2026-11-10\n- a：ある\n- b：ある\n- c：不明\n- d：ある\n"
+    (tmp_path / "7203.md").write_text(poor, encoding="utf-8")
+    (tmp_path / "6758.md").write_text(good, encoding="utf-8")
+    (tmp_path / "9984.md").write_text(poor, encoding="utf-8")
+    order = {"buys": [{"code": "7203"}, {"code": "6758"}], "sells": [{"code": "9984"}, {"code": "0000"}]}
+    errs, warns = check_note_quality(order, tmp_path)
+    assert len(errs) == 1 and "7203" in errs[0] and "4 項目中 3 項目" in errs[0]
+    assert len(warns) == 1 and "9984" in warns[0]

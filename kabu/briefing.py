@@ -212,13 +212,18 @@ def funds_lines(f: dict, holdings: list, mood: str) -> list[str]:
 
 
 def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fund_date=None,
-                    crosses=None, value=None, peer=None, regime=None, funds_info=None) -> str:
+                    crosses=None, value=None, peer=None, regime=None, funds_info=None,
+                    gap=None, events_md=None) -> str:
     fund = fund or {}
     fg = lambda code, k: (fund.get(code) or {}).get(k)
     L = [f"# 朝の資料 {today}", "", "数値はプログラムで取得した前営業日（米国は前夜）の終値です。ニュース検索の数値より優先してください。", ""]
     L += ["## 1. 主要指標", "", "| 指標 | 終値 | 前日比 | 日付 |", "|---|---:|---:|---|"]
     for m in market:
         L.append(f"| {m['label']} | {_n(m.get('close'), '{:,.2f}')} | {_p(m.get('chg'))} | {m.get('date', '-')} |")
+    if gap_line(gap):
+        L += ["", f"- {gap_line(gap)}"]
+    if events_md:
+        L += events_md
     if regime:
         from kabu.business_types import TYPE_GUIDE, TYPE_LABELS
         fmt = lambda xs: "・".join(f"{t}{TYPE_LABELS[t]}" for t in xs) or "特になし"
@@ -285,23 +290,51 @@ def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fun
     return "\n".join(L) + "\n"
 
 
+def futures_gap(market: list[dict]) -> dict | None:
+    """日経225先物（CME）と前日の日経平均終値の差。寄り付きの上下の目安。"""
+    fut = next((m for m in market if m.get("ticker") == "NIY=F" and m.get("close")), None)
+    n = next((m for m in market if m.get("ticker") == "^N225" and m.get("close")), None)
+    if not fut or not n:
+        return None
+    return {"futures": fut["close"], "nikkei": n["close"], "gap": round((fut["close"] / n["close"] - 1) * 100, 2)}
+
+
+def gap_line(gap: dict | None) -> str | None:
+    if not gap:
+        return None
+    return (f"寄り付きの目安：日経225先物（CME）{gap['futures']:,.0f} は前日の日経平均終値 {gap['nikkei']:,.0f} "
+            f"より **{gap['gap']:+.2f}%**")
+
+
 # ---- データ取得（yfinance） ----
 
-def _frames(tickers: list[str], period: str) -> dict:
+def drop_today(df, today):
+    """当日（日本時間）以降の足を除く。自動実行が遅れて取引時間中に動いても、途中の値で資料を作らないため。"""
+    if df is None or today is None or len(df) == 0:
+        return df
+    import pandas as pd
+    try:
+        idx = df.index.tz_localize(None) if getattr(df.index, "tz", None) is not None else df.index
+        return df[idx.normalize() < pd.Timestamp(today)]
+    except Exception:
+        return df
+
+
+def _frames(tickers: list[str], period: str, today=None) -> dict:
     import yfinance as yf
     raw = yf.download(tickers, period=period, group_by="ticker", auto_adjust=False,
                       progress=False, threads=True)
     out = {}
     for t in tickers:
         try:
-            out[t] = raw[t] if len(tickers) > 1 else raw
+            out[t] = drop_today(raw[t] if len(tickers) > 1 else raw, today)
         except KeyError:
             out[t] = None
     return out
 
 
-def fetch_market() -> list[dict]:
-    frames = _frames([t for _, t in MARKET], "10d")
+def fetch_market(today=None) -> list[dict]:
+    frames = _frames([t for _, t in MARKET], "10d", today)
     out = []
     for label, t in MARKET:
         d = _clean(frames.get(t))
@@ -314,8 +347,8 @@ def fetch_market() -> list[dict]:
     return out
 
 
-def fetch_indicators(codes: list[str]) -> dict:
-    frames = _frames([f"{c}.T" for c in codes], "6mo")
+def fetch_indicators(codes: list[str], today=None) -> dict:
+    frames = _frames([f"{c}.T" for c in codes], "6mo", today)
     return {c: indicators(frames.get(f"{c}.T")) for c in codes}
 
 
@@ -336,16 +369,18 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     names = load_universe(root / "data" / "nikkei225.csv")
     state_p = root / "data" / "state.json"
     state = json.loads(state_p.read_text(encoding="utf-8")) if state_p.exists() else {"holdings": {}}
+    from datetime import date as _date
+    tday = _date.fromisoformat(today)
     notes = []
     try:
-        market = fetch_market()
+        market = fetch_market(tday)
     except Exception as e:
         market = []
         notes.append(f"主要指標の取得に失敗: {e}")
     notes += [f"{m['label']}（{m['ticker']}）" for m in market if m["close"] is None]
     codes = list(dict.fromkeys(list(names) + list(state["holdings"])))
     try:
-        ind = fetch_indicators(codes)
+        ind = fetch_indicators(codes, tday)
     except Exception as e:
         ind = {}
         notes.append(f"日経225の株価取得に失敗: {e}")
@@ -368,15 +403,20 @@ def build(root: Path, today: str) -> tuple[str, dict]:
         t = classify(h["code"], sectors.get(h["code"], ""))
         h["name"] = f"{h['name']}〔{t}{TYPE_LABELS[t]}〕"
     from kabu.ledger import funds
+    from kabu.events import events_lines, imminent_high, load_events
     funds_info = funds(state, {h["code"]: h["close"] for h in holdings if h.get("close")}) \
         if "cash" in state else None
+    events = load_events(root / "data" / "events.csv")
+    gap = futures_gap(market)
     md = render_briefing(today, market, holdings, ranks, names, notes, fund=fund, fund_date=fund_date,
                          regime=market_regime(market), funds_info=funds_info,
                          crosses=cross_lists({c: ind.get(c) for c in names}),
                          value=rank_value({c: fund.get(c) for c in names}),
                          peer=rank_peer_value({c: fund.get(c) for c in names}, sectors,
-                                              sector_medians(fund, sectors)))
-    return md, {"today": today, "market": market, "missing": notes}
+                                              sector_medians(fund, sectors)),
+                         gap=gap, events_md=events_lines(events, tday))
+    return md, {"today": today, "market": market, "missing": notes, "gap": gap,
+                "imminent": [e["event"] for e in imminent_high(events, tday)]}
 
 
 def main():

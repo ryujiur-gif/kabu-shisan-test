@@ -27,13 +27,16 @@ def _man(n) -> str:
     return f"{n // 10000}万円"
 
 
-def build_email(order, state, history_rows, last_trades, site_url, market=None) -> dict:
+def build_email(order, state, history_rows, last_trades, site_url, market=None, notices=None, gap=None) -> dict:
     d = date.fromisoformat(order["date"])
     buys = "・".join(b["name"] for b in order["buys"]) or "なし"
     sells = "・".join(s["name"] for s in order["sells"]) or "なし"
     subject = f"【株予想】{d.month}/{d.day} 買い：{buys}／売り：{sells}"
 
-    L = [f"■ 本日（{d.month}/{d.day}）の予想", "", "【市況】", order["summary"].strip(), ""]
+    L = [f"■ 本日（{d.month}/{d.day}）の予想", ""]
+    if notices:
+        L += [f"※{n}" for n in notices] + [""]
+    L += ["【市況】", order["summary"].strip(), ""]
     if market:
         L.append("【主要指標（前日終値）】")
         for m in market:
@@ -42,6 +45,8 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None) 
             else:
                 chg = "" if m.get("chg") is None else f"（{'+' if m['chg'] >= 0 else ''}{m['chg']:.2f}%）"
                 L.append(f"・{m['label']} {m['close']:,.2f}{chg}")
+        if gap:
+            L.append(f"・寄り付きの目安：日経先物は前日の日経平均終値より {gap['gap']:+.2f}%")
         L.append("")
     f = funds(state)
     if f["total"] > 0:
