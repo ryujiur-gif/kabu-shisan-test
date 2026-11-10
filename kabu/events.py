@@ -23,7 +23,12 @@ def load_events(path) -> list[dict]:
             e = date.fromisoformat((r.get("end_date") or "").strip() or r["date"].strip())
         except ValueError:
             continue
-        out.append({**{k: (r.get(k) or "").strip() for k in FIELDS}, "start": s, "end": e})
+        row = {k: (r.get(k) or "").strip() for k in FIELDS}
+        try:
+            date.fromisoformat(row["checked"])
+        except ValueError:
+            row["checked"] = ""   # 日付の形でなければ未確認扱い（備考欄のカンマで列がずれた場合など）
+        out.append({**row, "start": s, "end": e})
     return sorted(out, key=lambda r: (r["start"], r["end"]))
 
 

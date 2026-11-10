@@ -54,3 +54,16 @@ def test_events_lines(tmp_path):
 def test_events_lines_empty():
     text = "\n".join(events_lines([], date(2026, 11, 10)))
     assert "登録されたイベントはありません" in text and "未確認" in text
+
+
+def test_checked_must_be_a_date(tmp_path):
+    p = tmp_path / "events.csv"
+    p.write_text("date,end_date,event,importance,note,checked\n2026-12-08,,X,高,備考,900億円枠\n", encoding="utf-8")
+    e = load_events(p)
+    assert e[0]["checked"] == "" and needs_review(e, date(2026, 11, 10))
+
+
+def test_real_events_csv_has_no_broken_rows():
+    e = load_events("data/events.csv")
+    assert e and all(x["checked"] for x in e), [x["event"] for x in e if not x["checked"]]
+    assert all(x["importance"] in ("高", "中", "低") for x in e)
