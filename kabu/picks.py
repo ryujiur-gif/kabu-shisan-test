@@ -145,3 +145,59 @@ def check_notes(order: dict, notes_dir, today: str, max_age_days: int = 90) -> l
         if age > max_age_days:
             errs.append(f"{code} の企業メモが古いです（{age}日前）。調べ直して更新してください")
     return errs
+
+
+RSI_LIMIT = 75.0       # これ以上は飛びつき買いとして買わない（ROUTINE.md 手順4-3 b）
+MA25_LIMIT = 15.0
+CASES_PER_DAY = 3      # 1日に求める振り返りの件数の上限
+
+
+def check_entry_rules(order: dict, indicators: dict | None, imminent: list | None) -> list[str]:
+    """手順書で「買わない」と決めている条件を、数値で確かめる（朝の資料の指標がある日だけ）。"""
+    errs = []
+    for b in order.get("buys", []):
+        x = (indicators or {}).get(b.get("code")) or {}
+        rsi, dev = x.get("rsi14"), x.get("ma25_dev")
+        if rsi is not None and rsi >= RSI_LIMIT:
+            errs.append(f"買い {b.get('code')} は RSI {rsi:.0f}（{RSI_LIMIT:.0f}以上）で過熱しています。見送ってください")
+        if dev is not None and dev >= MA25_LIMIT:
+            errs.append(f"買い {b.get('code')} は25日線から +{dev:.1f}%（+{MA25_LIMIT:.0f}%以上）離れています。見送ってください")
+        if imminent and b.get("confidence") in ("高", "中"):
+            errs.append(f"今日〜明日に重要イベント（{'・'.join(imminent[:2])}）があります。"
+                        f"買い {b.get('code')} は見送るか、期待度を「低」にしてください")
+    return errs
+
+
+def check_learning(order: dict, review: dict | None, journal_text: str, playbook_text: str) -> list[str]:
+    """振り返り（journal.md）・ルール集（playbook.md）・今日の反映（learned）が書かれているか。"""
+    import re
+    if not review or not review.get("n_buys"):
+        return []
+    errs = []
+    due = [c for c in review.get("cases_due") or []
+           if not re.search(r"^" + re.escape(c["key"]) + r"\b", journal_text or "", re.M)][:CASES_PER_DAY]
+    for c in due:
+        errs.append(f"振り返りが未記入です。data/review/journal.md に「{c['key']} …」の見出しで書いてください（{c['title']}）")
+    if (review.get("cases_due") or review.get("overall", {}).get("n")) and not (playbook_text or "").strip():
+        errs.append("data/review/playbook.md（傾向と対策のルール集）がありません。ROUTINE.md 手順2.5で作成してください")
+    if len(str(order.get("learned", "")).strip()) < 10:
+        errs.append("注文ファイルに learned（過去の振り返りを今日の判断にどう反映したか。1〜2文）を書いてください")
+    return errs
+
+
+def pattern_cautions(order: dict, indicators: dict | None, review: dict | None, context: dict | None,
+                     meta: dict | None = None) -> list[str]:
+    """今日の買いが、過去に成績の悪かった条件（弱み）に当てはまる場合の注意文。"""
+    from kabu.review import matching_patterns, tags_of
+    out = []
+    pats = (review or {}).get("patterns") or []
+    for b in order.get("buys", []):
+        x = (indicators or {}).get(b.get("code")) or {}
+        feat = {"confidence": b.get("confidence"), "tags": tags_of(b.get("reason", "")),
+                "rsi14": x.get("rsi14"), "ma25_dev": x.get("ma25_dev"), "chg1d": x.get("chg1d"),
+                "vol_ratio": x.get("vol_ratio"), **(context or {}), **((meta or {}).get(b.get("code")) or {})}
+        for p in matching_patterns(feat, pats):
+            out.append(f"{b.get('name')}（{b.get('code')}）は過去の弱みの条件「{p['bucket']}」に当てはまります"
+                       f"（{p['level']}・{p['n']}件・日経平均との差 {p.get('avg_x') if p.get('avg_x') is not None else p['avg_ret']:+.2f}%）。"
+                       f"対策：{p['advice']}")
+    return out

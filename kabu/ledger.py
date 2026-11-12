@@ -88,3 +88,25 @@ def valuation(state: dict, closes: dict[str, float]) -> dict:
     for code, h in state["holdings"].items():
         stock += int(h["shares"] * closes.get(code, h["avg_cost"]))
     return {"total": state["cash"] + stock, "cash": state["cash"], "stock_value": stock}
+
+
+def replay(trades: list[dict]) -> dict:
+    """取引履歴（約定のみ）を最初からたどって、現金と持ち株を計算し直す。記録の点検と過去日の評価に使う。"""
+    cash, holdings = START_CASH, {}
+    for t in sorted(trades, key=lambda r: r["date"]):
+        if t.get("status") != "約定":
+            continue
+        code, shares, price = t["code"], int(t["shares"]), float(t["price"])
+        if t["side"] == "買":
+            cash -= int(t["amount"])
+            h = holdings.get(code)
+            if h:
+                total = h["shares"] + shares
+                h["avg_cost"] = (h["shares"] * h["avg_cost"] + shares * price) / total
+                h["shares"] = total
+            else:
+                holdings[code] = {"name": t.get("name", ""), "shares": shares, "avg_cost": price}
+        else:
+            cash += int(t["amount"])
+            holdings.pop(code, None)
+    return {"cash": cash, "holdings": holdings}

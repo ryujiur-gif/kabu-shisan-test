@@ -90,6 +90,13 @@ def run(today: date, data_dir: Path, fetch=None) -> dict:
             continue
         pending.append((f, {**o, "date": od}))
 
+    # すでに前営業日分まで確定・評価済みなら、株価を取り直さずそのまま返す
+    # （同じ日に2回目以降の実行があっても、取得の不調で「失敗」に書き換わらないようにする）
+    if not pending and state.get("last_date") == p.isoformat() and             any(r["date"] == p.isoformat() for r in read_rows(data_dir / "history.csv")):
+        return {**base, "status": "ok", "holdings": _holdings_view(state, last_closes),
+                "total": valuation(state, last_closes)["total"],
+                "message": f"{p} 分は確定済みです"}
+
     # 価格をすべて先に集める（失敗したら何も書かない）
     opens_by_date, notes = {}, []
     for f, o in pending:

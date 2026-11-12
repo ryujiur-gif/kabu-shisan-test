@@ -27,7 +27,8 @@ def _man(n) -> str:
     return f"{n // 10000}万円"
 
 
-def build_email(order, state, history_rows, last_trades, site_url, market=None, notices=None, gap=None) -> dict:
+def build_email(order, state, history_rows, last_trades, site_url, market=None, notices=None, gap=None,
+                review=None, cautions=None) -> dict:
     d = date.fromisoformat(order["date"])
     buys = "・".join(b["name"] for b in order["buys"]) or "なし"
     sells = "・".join(s["name"] for s in order["sells"]) or "なし"
@@ -72,6 +73,10 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
             name = x.get("name") or state.get("holdings", {}).get(x["code"], {}).get("name", "")
             L.append(f"・{name}（{x['code']}）{OUTLOOK_WORDS.get(x['outlook'], x['outlook'])}")
             L.append(f"　理由：{x['reason']}")
+    if cautions:
+        L += ["", "【過去の傾向からの注意】"] + [f"・{c}" for c in cautions]
+    if str(order.get("learned", "")).strip():
+        L += ["", "【振り返りの反映】", order["learned"].strip()]
     L.append("※売買は本日の始値で成立したものとして記録します。")
 
     L += ["", "■ 前回の約定結果"]
@@ -94,6 +99,8 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
         L.append(f"日経平均との差：{_signed(total - bench)}")
     else:
         L.append(f"総資産：{_yen(START_CASH)}（運用開始前）")
+    from kabu.review import email_lines
+    L += email_lines(review)
     if state["holdings"]:
         L += ["", "【持ち株】"]
         closes = state.get("last_closes", {})
@@ -138,7 +145,55 @@ else{document.getElementById('c').parentNode.innerHTML='<p class="sub">記録が
 """
 
 
-def build_site(state, history_rows, trades_rows, order) -> str:
+def _pp(x) -> str:
+    return "-" if x is None else f"{'+' if x >= 0 else ''}{x:.1f}%"
+
+
+def _cls(x) -> str:
+    return "" if x is None else ("up" if x >= 0 else "down")
+
+
+def review_section(rv) -> str:
+    """成績ページの「予想の振り返り」。"""
+    if not rv or not rv.get("n_buys"):
+        return ""
+    from kabu.review import MAIN
+    parts = []
+    pf = rv.get("portfolio")
+    if pf:
+        parts.append(f"<p class='summary'>日経平均との差 <b class='{_cls(pf['diff'])}'>{pf['diff']:+.2f}ポイント</b>"
+                     f"（概算の内訳：現金で持っていた分 {pf['cash_part']:+.2f}／銘柄選びの分 {pf['selection_part']:+.2f}）</p>")
+    s = rv["overall"]
+    if s.get("n"):
+        beat = "" if s.get("beat") is None else f"・日経平均を上回った割合 {s['beat']}%"
+        parts.append(f"<p class='summary'>買い予想 {s['n']}件を評価：上昇した割合 {s['win']}%{beat}・平均 {_pp(s['avg_ret'])}</p>")
+    o = rv.get("outlook_stats", {}).get("全体")
+    if o:
+        parts.append(f"<p class='summary'>持ち株の見通しの的中率 {o['hit']}%（{o['n']}件）</p>")
+    rows = []
+    for b in reversed(rv["buys"][-30:]):
+        if b["sell_date"]:
+            r, x, when = b.get("realized"), b.get("realized_x"), f"{b['sell_date'][5:]}売却"
+        elif b.get(f"r{MAIN}") is not None:
+            r, x, when = b[f"r{MAIN}"], b.get(f"x{MAIN}"), f"{MAIN}日後"
+        else:
+            r, x, when = b.get("latest"), b.get("latest_x"), f"{b['days']}日目"
+        rows.append(f"<tr><td>{_e(b['name'])}<small>{_e(b['date'][5:])} 買い・期待度{_e(b['confidence'] or '-')}</small></td>"
+                    f"<td class='{_cls(r)}'>{_pp(r)}<small>{_e(when)}</small></td><td class='{_cls(x)}'>{_pp(x)}</td>"
+                    f"<td>{_e(b['verdict'] if b['ret'] is not None else '評価中')}</td></tr>")
+    parts.append("<div class='scroll'><table><tr><th>銘柄</th><th>騰落</th><th>日経平均との差</th><th>判定</th></tr>"
+                 + "".join(rows) + "</table></div>")
+    pats = rv.get("patterns") or []
+    if pats:
+        parts.append("<div class='pick'><b>傾向と対策</b>" + "".join(
+            f"<p>【{_e(p['level'])}・{_e(p['kind'])}】{_e(p['bucket'])}（{p['n']}件・日経平均との差 {_pp(p.get('avg_x'))}）→ {_e(p['advice'])}</p>"
+            for p in pats[:8]) + "</div>")
+    parts.append("<p class='sub' style='margin:8px 0 0'>買った日の始値から5営業日後の終値で評価（その前に売ったら売値）。"
+                 "同じ条件が5件たまるまでは「仮説」です。</p>")
+    return "<section class='card'><h2>予想の振り返り</h2>" + "".join(parts) + "</section>"
+
+
+def build_site(state, history_rows, trades_rows, order, review=None) -> str:
     closes = state.get("last_closes", {})
     if history_rows:
         h = history_rows[-1]
@@ -190,6 +245,7 @@ def build_site(state, history_rows, trades_rows, order) -> str:
 <div class="legend"><i style="background:var(--mine)"></i>予想どおり売買<i style="background:var(--bench)"></i>日経平均に同額投資</div>
 <div style="position:relative;height:240px"><canvas id="c"></canvas></div></section>
 <section class="card"><h2>最新の予想（{_e(order['date'] if order else '-')}）</h2>{picks}</section>
+{review_section(review)}
 <section class="card"><h2>持ち株</h2><div class="scroll"><table><tr><th>銘柄</th><th>株数</th><th>取得単価</th><th>現在値</th><th>損益</th></tr>{hold_rows}</table></div>
 <p class="sub" style="margin:8px 0 0">現金：{_yen(state['cash'])}</p></section>
 <section class="card"><h2>取引履歴</h2><div class="scroll"><table><tr><th>日付</th><th>売買</th><th>銘柄</th><th>株数</th><th>単価</th><th>状態</th></tr>{trade_rows}</table></div></section>

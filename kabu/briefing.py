@@ -78,6 +78,13 @@ def indicators(df) -> dict | None:
         return None
     c = [float(x) for x in d["Close"]]
     v = [float(x) if x == x else 0.0 for x in d["Volume"]] if "Volume" in d else [0.0] * len(c)
+    return indicators_lists(c, v)
+
+
+def indicators_lists(c: list[float], v: list[float]) -> dict | None:
+    """終値と出来高の並び（古い順）から指標を計算。26本未満なら None。"""
+    if len(c) < 26:
+        return None
     ma25 = sum(c[-25:]) / 25
     prev_vols = v[-21:-1]
     avg_vol = sum(prev_vols) / len(prev_vols) if prev_vols else 0
@@ -213,10 +220,14 @@ def funds_lines(f: dict, holdings: list, mood: str) -> list[str]:
 
 def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fund_date=None,
                     crosses=None, value=None, peer=None, regime=None, funds_info=None,
-                    gap=None, events_md=None) -> str:
+                    gap=None, events_md=None, review_md=None, health=None) -> str:
     fund = fund or {}
     fg = lambda code, k: (fund.get(code) or {}).get(k)
     L = [f"# 朝の資料 {today}", "", "数値はプログラムで取得した前営業日（米国は前夜）の終値です。ニュース検索の数値より優先してください。", ""]
+    if health:
+        L += ["## データの点検で見つかった問題", ""] + [f"- {h}" for h in health] + [""]
+    if review_md:
+        L += review_md
     L += ["## 1. 主要指標", "", "| 指標 | 終値 | 前日比 | 日付 |", "|---|---:|---:|---|"]
     for m in market:
         L.append(f"| {m['label']} | {_n(m.get('close'), '{:,.2f}')} | {_p(m.get('chg'))} | {m.get('date', '-')} |")
@@ -352,6 +363,62 @@ def fetch_indicators(codes: list[str], today=None) -> dict:
     return {c: indicators(frames.get(f"{c}.T")) for c in codes}
 
 
+def bars_of(df) -> list[dict]:
+    """日足 DataFrame → [{"d": 日付, "o": 始値, "c": 終値, "v": 出来高}]（古い順。終値の無い足は除く）。"""
+    d = _clean(df)
+    if d is None:
+        return []
+    out = []
+    for idx, row in d.iterrows():
+        o, v = row.get("Open"), row.get("Volume")
+        out.append({"d": idx.strftime("%Y-%m-%d"), "o": float(o) if o == o and o else None,
+                    "c": float(row["Close"]), "v": float(v) if v == v and v is not None else 0.0})
+    return out
+
+
+def fetch_series(codes: list[str], keep: list[str], today=None) -> tuple[dict, dict]:
+    """全銘柄の指標と、振り返りに使う日足（keep の銘柄と日経平均）をまとめて取る。"""
+    frames = _frames([f"{c}.T" for c in codes] + ["^N225"], "6mo", today)
+    ind = {c: indicators(frames.get(f"{c}.T")) for c in codes}
+    series = {c: bars_of(frames.get(f"{c}.T")) for c in keep}
+    series["N225"] = bars_of(frames.get("^N225"))
+    return ind, series
+
+
+def merge_nikkei(bars: list[dict], hist_rows: list[dict]) -> list[dict]:
+    """日経平均の日足に欠けた日を、確定時に記録した終値（history.csv）で補う。"""
+    have = {b["d"] for b in bars}
+    extra = [{"d": r["date"], "o": None, "c": float(r["nikkei_close"]), "v": 0.0}
+             for r in hist_rows if r["date"] not in have and r.get("nikkei_close")]
+    return sorted(bars + extra, key=lambda b: b["d"])
+
+
+def fix_nikkei(market: list[dict], prev_day: str, nbars: list[dict], fetch=None) -> list[dict]:
+    """主要指標の日経平均が前営業日の値でないとき（早朝は直近の足が欠けることがある）、
+    記録済みの終値（nbars）か個別取得で差し替える。直せなければそのまま返す（点検で注記される）。"""
+    out = []
+    for m in market:
+        if m.get("ticker") != "^N225" or m.get("date") == prev_day:
+            out.append(m)
+            continue
+        by = {b["d"]: b["c"] for b in nbars or []}
+        close = by.get(prev_day)
+        if close is None and fetch:
+            try:
+                from datetime import date as _d
+                got = fetch(_d.fromisoformat(prev_day))
+                close = got["close"] if got else None
+            except Exception:
+                close = None
+        if close is None:
+            out.append(m)
+            continue
+        earlier = [b["c"] for b in nbars or [] if b["d"] < prev_day]
+        base = earlier[-1] if earlier else m.get("close")
+        out.append({**m, "close": round(close, 2), "chg": pct_change(base, close), "date": prev_day})
+    return out
+
+
 def _bought_dates(trades: list[dict]) -> dict:
     out = {}
     for t in trades:
@@ -379,15 +446,22 @@ def build(root: Path, today: str) -> tuple[str, dict]:
         notes.append(f"主要指標の取得に失敗: {e}")
     notes += [f"{m['label']}（{m['ticker']}）" for m in market if m["close"] is None]
     codes = list(dict.fromkeys(list(names) + list(state["holdings"])))
+    all_trades = read_rows(root / "data" / "trades.csv")
+    keep = list(dict.fromkeys([t["code"] for t in all_trades] + list(state["holdings"])))
     try:
-        ind = fetch_indicators(codes, tday)
+        ind, series = fetch_series(codes, keep, tday)
     except Exception as e:
-        ind = {}
+        ind, series = {}, {"N225": []}
         notes.append(f"日経225の株価取得に失敗: {e}")
+    from kabu.market_calendar import previous_trading_day
+    from kabu.prices import get_nikkei
+    prev_day = previous_trading_day(tday).isoformat()
+    series["N225"] = merge_nikkei(series.get("N225") or [], read_rows(root / "data" / "history.csv"))
+    market = fix_nikkei(market, prev_day, series["N225"], fetch=get_nikkei)
     missing = [c for c in names if not ind.get(c)]
     if missing:
         notes.append(f"株価が取れなかった銘柄 {len(missing)} 件: {', '.join(missing[:20])}{' ほか' if len(missing) > 20 else ''}")
-    bought = _bought_dates(read_rows(root / "data" / "trades.csv"))
+    bought = _bought_dates(all_trades)
     holdings = [holding_view(c, h, ind.get(c), bought.get(c)) for c, h in state["holdings"].items()]
     ranks = rank_candidates({c: ind.get(c) for c in names})
     import csv as _csv
@@ -408,15 +482,33 @@ def build(root: Path, today: str) -> tuple[str, dict]:
         if "cash" in state else None
     events = load_events(root / "data" / "events.csv")
     gap = futures_gap(market)
+    regime = market_regime(market)
+    imminent = [e["event"] for e in imminent_high(events, tday)]
+    # データの点検・修復と、予想の振り返り（学習）
+    from kabu import health as _health, review as _review
+    review_md, problems = None, []
+    try:
+        filled = _health.backfill_history(root, series)
+        if filled:
+            notes.append(f"成績の記録の抜けを埋めました（{', '.join(filled)}）")
+        problems = _health.check(root, tday, market)
+    except Exception as e:
+        problems = [f"データの点検に失敗: {e}"]
+    try:
+        rv = _review.update(root, today, series, {"mood": regime.get("mood"), "imminent": bool(imminent)})
+        review_md = _review.briefing_lines(rv, _review.read_text(root / "data" / "review" / "playbook.md"))
+    except Exception as e:
+        notes.append(f"予想の振り返りの集計に失敗: {e}")
     md = render_briefing(today, market, holdings, ranks, names, notes, fund=fund, fund_date=fund_date,
-                         regime=market_regime(market), funds_info=funds_info,
+                         regime=regime, funds_info=funds_info, review_md=review_md, health=problems,
                          crosses=cross_lists({c: ind.get(c) for c in names}),
                          value=rank_value({c: fund.get(c) for c in names}),
                          peer=rank_peer_value({c: fund.get(c) for c in names}, sectors,
                                               sector_medians(fund, sectors)),
                          gap=gap, events_md=events_lines(events, tday))
     return md, {"today": today, "market": market, "missing": notes, "gap": gap,
-                "imminent": [e["event"] for e in imminent_high(events, tday)]}
+                "imminent": imminent, "mood": regime.get("mood"), "health": problems,
+                "indicators": {c: x for c, x in ind.items() if x}}
 
 
 def main():

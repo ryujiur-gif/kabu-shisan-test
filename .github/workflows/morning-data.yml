@@ -32,7 +32,7 @@ jobs:
       - name: 売買の確定と朝の資料作成
         run: |
           if [ -n "${{ github.event.inputs.today }}" ]; then
-            python -m kabu.prepare --today "${{ github.event.inputs.today }}"
+            python -m kabu.prepare --today "${{ github.event.inputs.today }}" --force
           else
             python -m kabu.prepare
           fi
