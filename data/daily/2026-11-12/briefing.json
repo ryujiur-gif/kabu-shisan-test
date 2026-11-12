@@ -4,8 +4,8 @@
     {
       "label": "日経225先物（CME・円建て）",
       "ticker": "NIY=F",
-      "close": 61745.0,
-      "chg": 3.06,
+      "close": 61845.0,
+      "chg": 3.23,
       "date": "2026-11-11"
     },
     {
@@ -67,23 +67,23 @@
     {
       "label": "WTI原油",
       "ticker": "CL=F",
-      "close": 85.93,
-      "chg": -0.13,
+      "close": 86.01,
+      "chg": -0.03,
       "date": "2026-11-11"
     },
     {
       "label": "金",
       "ticker": "GC=F",
-      "close": 3991.0,
-      "chg": -0.97,
+      "close": 3993.1,
+      "chg": -0.92,
       "date": "2026-11-11"
     }
   ],
   "missing": [],
   "gap": {
-    "futures": 61745.0,
+    "futures": 61845.0,
     "nikkei": 60459.58,
-    "gap": 2.13
+    "gap": 2.29
   },
   "imminent": []
 }
