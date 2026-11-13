@@ -121,13 +121,14 @@ def build_buys(trades, series, context=None, meta=None) -> tuple[list[dict], lis
     context: {日付: {"mood":..., "imminent": bool}}、meta: {コード: {"type":..., "sector":...}}"""
     context, meta = context or {}, meta or {}
     nb = series.get("N225") or []
-    buys, sells, open_lots = [], [], {}
+    buys, sells, open_lots, held = [], [], {}, {}
     for t in sorted(trades, key=lambda r: r["date"]):
-        if t.get("status") != "約定":
-            continue
+        if t.get("status") != "約定" or t["side"] not in ("買", "売"):
+            continue   # 配当・分割の行は予想の評価には使わない
         code, d, price = t["code"], t["date"], float(t["price"])
         bars = series.get(code) or []
         if t["side"] == "買":
+            held[code] = held.get(code, 0) + int(t["shares"])
             f = forward(bars, d, price)
             nf = forward(nb, d, nikkei_base(nb, d))
             o = {"date": d, "code": code, "name": t["name"], "price": price, "shares": int(t["shares"]),
@@ -144,17 +145,20 @@ def build_buys(trades, series, context=None, meta=None) -> tuple[list[dict], lis
             buys.append(o)
             open_lots.setdefault(code, []).append(o)
         else:
-            lots = open_lots.pop(code, [])
+            held[code] = held.get(code, 0) - int(t["shares"])
+            partial = held[code] > 0   # 一部売却：残りは持ち続けるので、買いの評価は閉じない
+            lots = open_lots.get(code, []) if partial else open_lots.pop(code, [])
             n_sell = nikkei_base(nb, d)
-            for o in lots:
+            for o in ([] if partial else lots):
                 o["sell_date"], o["sell_price"] = d, price
                 o["realized"] = pct(o["price"], price)
                 n0 = nikkei_base(nb, o["date"])
                 nr = pct(n0, n_sell)
                 o["realized_x"] = None if nr is None else round(o["realized"] - nr, 2)
             cost = sum(o["price"] * o["shares"] for o in lots)
-            shares = sum(o["shares"] for o in lots)
-            avg = cost / shares if shares else None
+            lot_shares = sum(o["shares"] for o in lots)
+            avg = cost / lot_shares if lot_shares else None
+            shares = int(t["shares"])
             f = forward(bars, d, price)
             nf = forward(nb, d, n_sell)
             a5, n5 = f["ret"].get(MAIN), nf["ret"].get(MAIN)

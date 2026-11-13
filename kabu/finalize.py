@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from kabu.picks import (check_entry_rules, check_learning, check_note_quality, check_notes,
-                        load_universe, pattern_cautions, validate_order)
+                        load_sectors, load_universe, pattern_cautions, validate_order)
 from kabu.report import build_email, build_site
 from kabu.settle import jst_today, read_rows
 
@@ -52,8 +52,9 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
         order = json.loads(order_p.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         return 1, [f"注文ファイルが JSON として読めません: {e}"]
+    sectors = load_sectors(data / "nikkei225.csv") if (data / "nikkei225.csv").exists() else None
     universe = universe if universe is not None else load_universe(data / "nikkei225.csv")
-    errs = validate_order(order, state, universe, today=today)
+    errs = validate_order(order, state, universe, today=today, sectors=sectors)
     if not errs and check_note_files:
         errs = check_notes(order, data / "notes", today)
         if not errs:
@@ -70,12 +71,27 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
     journal = (rd / "journal.md").read_text(encoding="utf-8") if (rd / "journal.md").exists() else ""
     playbook = (rd / "playbook.md").read_text(encoding="utf-8") if (rd / "playbook.md").exists() else ""
     if not errs and check_note_files:
-        errs = check_entry_rules(order, indicators, (b or {}).get("imminent"))
+        from kabu import earnings as _earn
+        cal = _earn.load(data / "earnings.csv")
+        errs = check_entry_rules(order, indicators, (b or {}).get("imminent"), earnings=cal, today=today)
         errs += check_learning(order, review, journal, playbook)
     if errs:
         return 1, errs
     cautions = pattern_cautions(order, indicators, review,
                                 {"mood": b.get("mood"), "imminent": bool(b.get("imminent"))} if b else None)
+    # 決算またぎ（期待度「低」で通した買い）と、売らない持ち株の決算直前は注意として表示する
+    from datetime import date as _date
+    from kabu import earnings as _earn2
+    cal2 = _earn2.load(data / "earnings.csv")
+    sold_all = {s["code"] for s in order["sells"] if s.get("portion", "全部") == "全部"}
+    for x in order["buys"]:
+        e = _earn2.near(cal2, x["code"], _date.fromisoformat(today))
+        if e:
+            cautions.append(f"{x['name']}（{x['code']}）は決算発表（{e}）の直前の買いです。結果しだいで大きく動きます")
+    for c, h in state["holdings"].items():
+        e = _earn2.near(cal2, c, _date.fromisoformat(today))
+        if e and c not in sold_all:
+            cautions.append(f"持ち株 {h['name']}（{c}）は決算発表（{e}）が2営業日以内です。決算をまたいで持つことになります")
     for c in cautions:
         (warn or (lambda m: None))(c)
     hist = read_rows(data / "history.csv")
@@ -83,17 +99,20 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
     last_date = max((t["date"] for t in trades), default=None)
     last = [t for t in trades if t["date"] == last_date]
     cfg_p = root / "config.json"
-    site_url = json.loads(cfg_p.read_text(encoding="utf-8"))["site_url"] if cfg_p.exists() else ""
+    cfg = json.loads(cfg_p.read_text(encoding="utf-8")) if cfg_p.exists() else {}
+    site_url = cfg.get("site_url", "")
+    fee_rate = float(cfg.get("fee_rate", 0.0))
     (root / "out").mkdir(exist_ok=True)
     market, gap = (b.get("market"), b.get("gap")) if b else (None, None)
     notices = notices_for(today, data, b)
     (root / "out" / "email.json").write_text(
         json.dumps(build_email(order, state, hist, last, site_url, market=market, notices=notices, gap=gap,
-                               review=review, cautions=cautions),
+                               review=review, cautions=cautions, all_trades=trades, fee_rate=fee_rate),
                    ensure_ascii=False, indent=2),
         encoding="utf-8")
     (root / "docs").mkdir(exist_ok=True)
-    (root / "docs" / "index.html").write_text(build_site(state, hist, trades, order, review=review), encoding="utf-8")
+    (root / "docs" / "index.html").write_text(build_site(state, hist, trades, order, review=review, sectors=sectors, fee_rate=fee_rate),
+        encoding="utf-8")
     return 0, []
 
 

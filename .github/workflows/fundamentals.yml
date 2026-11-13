@@ -29,7 +29,7 @@ jobs:
         run: |
           git config user.name "kabu-shisan-test"
           git config user.email "kabu-shisan-test@users.noreply.github.com"
-          git add data/fundamentals.csv
+          git add data/fundamentals.csv data/earnings.csv
           if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
           git commit -m "財務データ更新 $(TZ=Asia/Tokyo date +%F)"
           for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done

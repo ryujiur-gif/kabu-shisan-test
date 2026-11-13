@@ -115,7 +115,14 @@ def fetch_one(code: str) -> dict | None:
         streak = None
     if not info and er is None:
         return None
-    return parse_fundamentals(info, er, streak)
+    out = parse_fundamentals(info, er, streak)
+    try:   # 決算発表日・権利落ち日（data/earnings.csv に保存する）
+        from datetime import date
+        from kabu.earnings import parse_calendar
+        out["_calendar"] = parse_calendar(t.calendar, date.today())
+    except Exception:
+        pass
+    return out
 
 
 def main():
@@ -137,6 +144,10 @@ def main():
         else:
             failed.append(c)
     save_fundamentals(Path("data/fundamentals.csv"), jst_today().isoformat(), data)
+    from kabu import earnings
+    cal = earnings.load("data/earnings.csv")
+    cal.update({c: d["_calendar"] for c, d in data.items() if d.get("_calendar")})
+    earnings.save("data/earnings.csv", cal)
     print(f"取得 {len(data)} / {len(codes)} 銘柄。失敗: {', '.join(failed) or 'なし'}")
     if len(data) < len(codes) * 0.8:
         raise SystemExit("取得できた銘柄が少なすぎます")

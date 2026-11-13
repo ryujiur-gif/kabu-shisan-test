@@ -197,8 +197,8 @@ def cash_target(mood: str) -> tuple[float, float]:
     return CASH_TARGETS.get(mood, CASH_TARGETS["中立"])
 
 
-def funds_lines(f: dict, holdings: list, mood: str) -> list[str]:
-    from kabu.ledger import MAX_STOCK_RATIO, MIN_CASH_RATIO, amount_for
+def funds_lines(f: dict, holdings: list, mood: str, sector_w: dict | None = None) -> list[str]:
+    from kabu.ledger import MAX_SECTOR_RATIO, MAX_STOCK_RATIO, MIN_CASH_RATIO, amount_for
     total = f["total"]
     lo, hi = cash_target(mood)
     ratio = f["cash_ratio"]
@@ -215,12 +215,18 @@ def funds_lines(f: dict, holdings: list, mood: str) -> list[str]:
     if f["weights"]:
         L.append("- 銘柄ごとの比率：" + "／".join(
             f"{names.get(c, c)} {w:.0%}" for c, w in sorted(f["weights"].items(), key=lambda x: -x[1])))
+    if sector_w:
+        over = [s for s, w in sector_w.items() if w >= MAX_SECTOR_RATIO - 0.05]
+        L.append(f"- 業種ごとの比率（1業種の上限：総資産の{MAX_SECTOR_RATIO:.0%}）：" + "／".join(
+            f"{s} {w:.0%}" for s, w in sector_w.items())
+            + (f"　**← {'・'.join(over)} は上限に近い。同じ業種の買い増しは控える**" if over else ""))
     return L
 
 
 def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fund_date=None,
                     crosses=None, value=None, peer=None, regime=None, funds_info=None,
-                    gap=None, events_md=None, review_md=None, health=None) -> str:
+                    gap=None, events_md=None, review_md=None, health=None,
+                    sector_w=None, earnings_md=None, sector_md=None) -> str:
     fund = fund or {}
     fg = lambda code, k: (fund.get(code) or {}).get(k)
     L = [f"# 朝の資料 {today}", "", "数値はプログラムで取得した前営業日（米国は前夜）の終値です。ニュース検索の数値より優先してください。", ""]
@@ -245,7 +251,9 @@ def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fun
               "| 型 | 特徴と判断のポイント |", "|---|---|"]
         L += [f"| {t}{TYPE_LABELS[t]} | {g} |" for t, g in TYPE_GUIDE.items()]
     if funds_info:
-        L += funds_lines(funds_info, holdings, (regime or {}).get("mood", ""))
+        L += funds_lines(funds_info, holdings, (regime or {}).get("mood", ""), sector_w)
+    if earnings_md:
+        L += earnings_md
     L += ["", "## 2. 持ち株の点検", ""]
     if holdings:
         L += ["| 銘柄 | 株数 | 取得単価 | 直近終値 | 損益率 | 損益額 | 前日比 | 5日 | RSI14 | 25日線乖離 | PER | PBR | 購入日 |",
@@ -261,6 +269,8 @@ def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fun
     L += ["", "## 3. 日経225 値動きスクリーニング", "",
           "買い候補探しの出発点です（上昇・出来高急増は材料が出ている可能性、下方乖離・RSI低は売られすぎの可能性）。",
           "ここに出た銘柄は、理由となるニュースを検索で確かめてから採用すること。", ""]
+    if sector_md:
+        L += sector_md
     for label, items in ranks.items():
         L += [f"### {label}", "", "| 銘柄 | 終値 | 前日比 | 5日 | 出来高倍率 | 25日線乖離 | RSI14 | PER | PBR |",
               "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
@@ -481,6 +491,22 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     funds_info = funds(state, {h["code"]: h["close"] for h in holdings if h.get("close")}) \
         if "cash" in state else None
     events = load_events(root / "data" / "events.csv")
+    # 業種ごとの比率・業種別の値動き・決算発表の予定
+    from kabu import earnings as _earn, stats as _stats
+    all_sectors = {**sectors}
+    sector_w = _stats.sector_weights(funds_info["values"], all_sectors, funds_info["total"]) if funds_info else None
+    sector_md = _stats.sector_lines(_stats.sector_moves({c: ind.get(c) for c in sectors}, all_sectors))
+    ep = root / "data" / "earnings.csv"
+    try:
+        if state["holdings"]:
+            bad = _earn.refresh(ep, list(state["holdings"]), tday)   # 持ち株は毎朝取り直す
+            if bad:
+                notes.append(f"決算発表日を取り直せなかった持ち株: {', '.join(bad)}")
+    except Exception as e:
+        notes.append(f"決算発表日の更新に失敗: {e}")
+    cal = _earn.load(ep)
+    plain = load_universe(root / "data" / "nikkei225.csv")
+    earnings_md = _earn.briefing_lines(cal, tday, {c: h["name"] for c, h in state["holdings"].items()}, plain)
     gap = futures_gap(market)
     regime = market_regime(market)
     imminent = [e["event"] for e in imminent_high(events, tday)]
@@ -505,7 +531,8 @@ def build(root: Path, today: str) -> tuple[str, dict]:
                          value=rank_value({c: fund.get(c) for c in names}),
                          peer=rank_peer_value({c: fund.get(c) for c in names}, sectors,
                                               sector_medians(fund, sectors)),
-                         gap=gap, events_md=events_lines(events, tday))
+                         gap=gap, events_md=events_lines(events, tday),
+                         sector_w=sector_w, earnings_md=earnings_md, sector_md=sector_md)
     return md, {"today": today, "market": market, "missing": notes, "gap": gap,
                 "imminent": imminent, "mood": regime.get("mood"), "health": problems,
                 "indicators": {c: x for c, x in ind.items() if x}}

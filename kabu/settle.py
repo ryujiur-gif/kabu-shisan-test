@@ -58,10 +58,22 @@ def _valid_date(s) -> bool:
         return False
 
 
-def run(today: date, data_dir: Path, fetch=None) -> dict:
+def _ref_closes(data_dir: Path, d: str) -> dict:
+    """その日の朝の資料に保存した前日終値（始値が高すぎる買いの見送り判定に使う）。"""
+    try:
+        ind = _read_json(data_dir / "daily" / d / "indicators.json")
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return {c: x["close"] for c, x in ind.items() if isinstance(x, dict) and x.get("close")}
+
+
+def run(today: date, data_dir: Path, fetch=None, actions_fetch=None, even_if_holiday: bool = False) -> dict:
+    """fetch を差し替えたとき（テスト）は、actions_fetch を渡さない限り配当・分割の取得をしない。
+    even_if_holiday：休場日（土曜の週次まとめなど）でも、前営業日分の確定と評価を行う。"""
     data_dir = Path(data_dir)
     base = {"today": today.isoformat()}
-    if not is_trading_day(today):
+    use_actions = actions_fetch is not None or fetch is None
+    if not is_trading_day(today) and not even_if_holiday:
         return {**base, "status": "holiday", "message": f"{today} は休場日です"}
     state_p = data_dir / "state.json"
     if not state_p.exists():
@@ -92,7 +104,8 @@ def run(today: date, data_dir: Path, fetch=None) -> dict:
 
     # すでに前営業日分まで確定・評価済みなら、株価を取り直さずそのまま返す
     # （同じ日に2回目以降の実行があっても、取得の不調で「失敗」に書き換わらないようにする）
-    if not pending and state.get("last_date") == p.isoformat() and             any(r["date"] == p.isoformat() for r in read_rows(data_dir / "history.csv")):
+    actions_done = not use_actions or state.get("actions_through", "") >= p.isoformat()
+    if not pending and actions_done and state.get("last_date") == p.isoformat() and             any(r["date"] == p.isoformat() for r in read_rows(data_dir / "history.csv")):
         return {**base, "status": "ok", "holdings": _holdings_view(state, last_closes),
                 "total": valuation(state, last_closes)["total"],
                 "message": f"{p} 分は確定済みです"}
@@ -122,10 +135,27 @@ def run(today: date, data_dir: Path, fetch=None) -> dict:
                 return error(f"{first} の日経平均を取得できませんでした")
             bench_open = {"start_open": bm["open"], "start_date": first}
 
+    # 配当・分割（権利落ち日がまだ反映していない日〜前営業日のもの）
+    from kabu import corporate
+    acts, act_failed = {}, []
+    if use_actions:
+        since = corporate.day_after(state["actions_through"]) if state.get("actions_through")             else date.fromisoformat(state["start_date"])
+        codes = list(state["holdings"]) + [x["code"] for _, o in pending for x in o.get("buys", [])]
+        acts, act_failed = corporate.collect(codes, since, p, fetch=actions_fetch)
+        if act_failed:
+            notes.append(f"配当・分割の確認ができませんでした（{', '.join(act_failed)}）。次回に確認します")
+
+    # 日付順に、その日の配当・分割 → その日の注文、の順で反映する
+    old_trades = read_rows(data_dir / "trades.csv")
     new_trades = []
-    for f, o in pending:
-        state, tr = settle(state, o, opens_by_date[o["date"]])
-        new_trades += tr
+    for d in sorted(set(acts) | {o["date"] for _, o in pending}):
+        if d in acts:
+            new_trades += corporate.apply(state, old_trades + new_trades, d, acts[d])
+        for f, o in pending:
+            if o["date"] == d:
+                state, tr = settle(state, o, opens_by_date[d], _ref_closes(data_dir, d))
+                new_trades += tr
+    last_closes = state.get("last_closes", {})   # 分割で調整された場合に備えて取り直す
     if bench_open:
         state["benchmark"] = bench_open
 
@@ -141,8 +171,9 @@ def run(today: date, data_dir: Path, fetch=None) -> dict:
 
     # ここから書き込み
     if new_trades:
-        tp = data_dir / "trades.csv"
-        _write_rows(tp, TRADE_FIELDS, read_rows(tp) + new_trades)
+        _write_rows(data_dir / "trades.csv", TRADE_FIELDS, old_trades + new_trades)
+    if use_actions and not act_failed:
+        state["actions_through"] = p.isoformat()
     for f, o in pending:
         o["settled"] = True
         _write_json(f, o)
@@ -156,6 +187,11 @@ def run(today: date, data_dir: Path, fetch=None) -> dict:
     state["last_date"] = p.isoformat()
     _write_json(state_p, state)
     msg = f"{p} 分を確定しました（約定等 {len(new_trades)} 件）"
+    for t in new_trades:
+        if t["side"] in ("配当", "分割"):
+            notes.append(f"{t['name']}：{t['reason']}" + (f" {t['amount']:,}円を入金" if t["side"] == "配当" else ""))
+        elif t["status"] == "見送り" and str(t.get("reason", "")).startswith("始値が"):
+            notes.append(f"{t['name']} の買いは見送り（{t['reason'].split('。')[0]}）")
     if notes:
         msg += "。" + "。".join(notes)
     return {**base, "status": "ok", "holdings": _holdings_view(state, closes), "total": v["total"],
@@ -166,9 +202,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--today", default=None)
     ap.add_argument("--data", default="data")
+    ap.add_argument("--even-if-holiday", action="store_true", help="休場日でも前営業日分を確定・評価する（週次まとめ用）")
     a = ap.parse_args()
     today = date.fromisoformat(a.today) if a.today else jst_today()
-    print(json.dumps(run(today, Path(a.data)), ensure_ascii=False, indent=2))
+    print(json.dumps(run(today, Path(a.data), even_if_holiday=a.even_if_holiday), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

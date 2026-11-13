@@ -1,0 +1,39 @@
+name: 週末のまとめ
+
+on:
+  schedule:
+    - cron: "30 21 * * 5"   # 土曜 6:30 JST（金曜の米国市場の引け後）
+  push:
+    paths: ["data/request-weekly/**"]   # 土曜の Claude が未作成のときに依頼ファイルを push して起動する
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: morning-data
+  cancel-in-progress: false
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q -r requirements.txt
+      - name: 金曜分の確定（休場日でも実行）
+        run: python -m kabu.settle --even-if-holiday
+      - name: 週末のまとめを作成
+        run: python -m kabu.weekly
+      - name: 保存
+        run: |
+          git config user.name "kabu-shisan-test"
+          git config user.email "kabu-shisan-test@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git commit -m "週末のまとめ $(TZ=Asia/Tokyo date +%F)"
+          for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          exit 1

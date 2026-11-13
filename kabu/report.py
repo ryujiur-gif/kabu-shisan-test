@@ -3,7 +3,7 @@ import html as H
 import json
 from datetime import date
 
-from kabu.ledger import RATIOS, START_CASH, amount_for, funds
+from kabu.ledger import RATIOS, START_CASH, after_tax, amount_for, funds, sell_shares
 from kabu.picks import OUTLOOK_WORDS
 
 _TAG_CLASS = {"買": "up", "売": "down"}
@@ -27,8 +27,34 @@ def _man(n) -> str:
     return f"{n // 10000}万円"
 
 
+def trade_line(t: dict) -> str:
+    """約定結果の1行（売買・配当・分割・見送り）。"""
+    if t["side"] == "配当":
+        return f"・配当 {t['name']} {int(t['shares']):,}株 × {float(t['price']):g}円（+{int(t['amount']):,}円を入金）"
+    if t["side"] == "分割":
+        return f"・分割 {t['name']}：{t.get('reason', '')}"
+    if t["status"] == "約定":
+        return f"・{t['side']} {t['name']} {int(t['shares']):,}株 @{float(t['price']):,.1f}円（{_yen(t['amount'])}）"
+    why = str(t.get("reason", ""))
+    extra = f"（{why.split('。')[0]}）" if why.startswith("始値が") else ""
+    return f"・{t['side']} {t['name']}：{t['status']}{extra}"
+
+
+def sell_word(s: dict, state: dict) -> str:
+    h = state.get("holdings", {}).get(s["code"])
+    if s.get("portion") == "半分" and h:
+        return f"半分売却（{h['shares']:,}株のうち {sell_shares(h['shares'], '半分'):,}株）"
+    return "全株売却"
+
+
+def after_tax_line(total: int, trades: list | None, fee_rate: float) -> str:
+    a = after_tax(int(total), trades or [], fee_rate)
+    fee = f"手数料 {a['fees']:,}円・" if fee_rate else ""
+    return f"手数料・税引き後の概算（いま全部売った場合）：{_yen(a['net'])}（{fee}税 {a['tax']:,}円）"
+
+
 def build_email(order, state, history_rows, last_trades, site_url, market=None, notices=None, gap=None,
-                review=None, cautions=None) -> dict:
+                review=None, cautions=None, all_trades=None, fee_rate: float = 0.0) -> dict:
     d = date.fromisoformat(order["date"])
     buys = "・".join(b["name"] for b in order["buys"]) or "なし"
     sells = "・".join(s["name"] for s in order["sells"]) or "なし"
@@ -62,7 +88,7 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
     L += ["", "【売り】"]
     if order["sells"]:
         for s in order["sells"]:
-            L.append(f"・{s['name']}（{s['code']}）全株売却")
+            L.append(f"・{s['name']}（{s['code']}）{sell_word(s, state)}")
             L.append(f"　理由：{s['reason']}")
     else:
         L.append("・なし（持ち株なし）" if not state.get("holdings") else "・なし（持ち株はすべて保有を継続）")
@@ -77,15 +103,11 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
         L += ["", "【過去の傾向からの注意】"] + [f"・{c}" for c in cautions]
     if str(order.get("learned", "")).strip():
         L += ["", "【振り返りの反映】", order["learned"].strip()]
-    L.append("※売買は本日の始値で成立したものとして記録します。")
+    L.append("※売買は本日の始値で成立したものとして記録します。始値が前日終値より5%以上高い買いは見送ります。")
 
     L += ["", "■ 前回の約定結果"]
     if last_trades:
-        for t in last_trades:
-            if t["status"] == "約定":
-                L.append(f"・{t['side']} {t['name']} {int(t['shares']):,}株 @{float(t['price']):,.1f}円（{_yen(t['amount'])}）")
-            else:
-                L.append(f"・{t['side']} {t['name']}：{t['status']}")
+        L += [trade_line(t) for t in last_trades]
     else:
         L.append("・まだありません")
 
@@ -97,6 +119,7 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
         L.append(f"損益：{_signed(total - START_CASH)}（{_pct((total - START_CASH) / START_CASH * 100)}）")
         L.append(f"日経平均に同額投資した場合：{_yen(bench)}（{_pct((bench - START_CASH) / START_CASH * 100)}）")
         L.append(f"日経平均との差：{_signed(total - bench)}")
+        L.append(after_tax_line(total, all_trades, fee_rate))
     else:
         L.append(f"総資産：{_yen(START_CASH)}（運用開始前）")
     from kabu.review import email_lines
@@ -193,7 +216,47 @@ def review_section(rv) -> str:
     return "<section class='card'><h2>予想の振り返り</h2>" + "".join(parts) + "</section>"
 
 
-def build_site(state, history_rows, trades_rows, order, review=None) -> str:
+def stats_section(state, history_rows, trades_rows, sectors=None, fee_rate: float = 0.0) -> str:
+    """成績ページの「成績の内訳」：税引き後・最大下落幅・業種の比率・月別・銘柄別の損益。"""
+    from kabu import stats
+    closes = state.get("last_closes", {})
+    parts = []
+    if history_rows:
+        total = int(history_rows[-1]["total"])
+        parts.append(f"<p class='summary'>{_e(after_tax_line(total, trades_rows, fee_rate))}</p>")
+        dd = stats.max_drawdown(history_rows)
+        if dd:
+            parts.append(f"<p class='summary'>最大下落幅：<b class='{_cls(dd['pct'])}'>{dd['pct']:.2f}%</b>"
+                         f"（{_e(dd['peak_date'][5:])} の最高額から {_e(dd['date'][5:])} まで）</p>")
+    f = funds(state)
+    if sectors and f["weights"]:
+        sw = stats.sector_weights(f["values"], sectors, f["total"])
+        parts.append("<p class='summary'>業種の比率：" + "／".join(f"{_e(k)} {v:.0%}" for k, v in sw.items())
+                     + f"／現金 {f['cash_ratio']:.0%}</p>")
+    mon = stats.monthly(history_rows)
+    if mon:
+        rows = "".join(f"<tr><td>{_e(m['month'])}</td><td class='{_cls(m['mine'])}'>{m['mine']:+.2f}%</td>"
+                       f"<td class='{_cls(m['bench'])}'>{m['bench']:+.2f}%</td>"
+                       f"<td class='{_cls(m['mine'] - m['bench'])}'>{m['mine'] - m['bench']:+.2f}</td></tr>" for m in mon)
+        parts.append("<div class='scroll'><table><tr><th>月</th><th>予想どおり売買</th><th>日経平均</th><th>差</th></tr>"
+                     + rows + "</table></div>")
+    ps = stats.per_stock(trades_rows, closes)
+    if ps:
+        rows = "".join(
+            f"<tr><td>{_e(x['name'])}<small>{_e(x['code'])}・{'保有中' if x['holding'] else '売却済み'}</small></td>"
+            f"<td class='{_cls(x['pl'])}'>{_signed(x['pl'])}<small>{x['pl_pct']:+.2f}%</small></td>"
+            f"<td>{_signed(x['realized'])}</td><td>{_signed(x['unrealized'])}</td><td>{x['dividend']:,}円</td></tr>"
+            for x in ps)
+        win = sum(1 for x in ps if x["pl"] > 0)
+        parts.append(f"<p class='summary' style='margin-top:10px'>銘柄別の損益（{len(ps)}銘柄中 {win}銘柄がプラス）</p>"
+                     "<div class='scroll'><table><tr><th>銘柄</th><th>損益</th><th>確定</th><th>含み</th><th>配当</th></tr>"
+                     + rows + "</table></div>")
+    if not parts:
+        return ""
+    return "<section class='card'><h2>成績の内訳</h2>" + "".join(parts) + "</section>"
+
+
+def build_site(state, history_rows, trades_rows, order, review=None, sectors=None, fee_rate: float = 0.0) -> str:
     closes = state.get("last_closes", {})
     if history_rows:
         h = history_rows[-1]
@@ -215,14 +278,14 @@ def build_site(state, history_rows, trades_rows, order, review=None) -> str:
     hold_rows = "".join(hold) or "<tr><td colspan='5'>持ち株はありません</td></tr>"
 
     trade_rows = "".join(
-        f"<tr><td>{_e(t['date'][5:])}</td><td class='{'up' if t['side'] == '買' else 'down'}'>{_e(t['side'])}</td>"
+        f"<tr><td>{_e(t['date'][5:])}</td><td class='{_TAG_CLASS.get(t['side'], '')}'>{_e(t['side'])}</td>"
         f"<td>{_e(t['name'])}</td><td>{int(t['shares']):,}</td><td>{float(t['price']):,.1f}</td><td>{_e(t['status'])}</td></tr>"
         for t in reversed(trades_rows)) or "<tr><td colspan='6'>まだありません</td></tr>"
 
     picks = "<p>まだありません</p>"
     if order:
         items = [("買", b["name"], b["code"], f"期待度 {b['confidence']}", b["reason"]) for b in order["buys"]]
-        items += [("売", s["name"], s["code"], "全株売却", s["reason"]) for s in order["sells"]]
+        items += [("売", s["name"], s["code"], sell_word(s, state), s["reason"]) for s in order["sells"]]
         items += [("保有", x.get("name", ""), x["code"], OUTLOOK_WORDS.get(x["outlook"], x["outlook"]), x["reason"])
                   for x in order.get("holds") or []]
         picks = f"<p class='summary'>{_e(order['summary'])}</p>" + "".join(
@@ -246,6 +309,7 @@ def build_site(state, history_rows, trades_rows, order, review=None) -> str:
 <div style="position:relative;height:240px"><canvas id="c"></canvas></div></section>
 <section class="card"><h2>最新の予想（{_e(order['date'] if order else '-')}）</h2>{picks}</section>
 {review_section(review)}
+{stats_section(state, history_rows, trades_rows, sectors, fee_rate)}
 <section class="card"><h2>持ち株</h2><div class="scroll"><table><tr><th>銘柄</th><th>株数</th><th>取得単価</th><th>現在値</th><th>損益</th></tr>{hold_rows}</table></div>
 <p class="sub" style="margin:8px 0 0">現金：{_yen(state['cash'])}</p></section>
 <section class="card"><h2>取引履歴</h2><div class="scroll"><table><tr><th>日付</th><th>売買</th><th>銘柄</th><th>株数</th><th>単価</th><th>状態</th></tr>{trade_rows}</table></div></section>
