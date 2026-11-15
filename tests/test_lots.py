@@ -49,9 +49,11 @@ def test_simulate_small_and_large_capital():
     assert s["n_orders"] == 2 and s["n_bought"] == 1 and s["n_short"] == 1     # B（120万円/100株）は買えない
     big = lots.simulate(ORDERS, SERIES, [], 10_000_000, "2026-11-09")
     b = lots.summarize("1,000万円", 10_000_000, big)
-    assert b["n_bought"] == 2 and b["n_short"] == 0
+    # 1,000万円でも「中」（10%＝100万円）では B（12,000円×100株＝120万円）は買えない
+    assert b["n_bought"] == 1 and b["n_short"] == 1
     assert big["state"]["holdings"]["A"]["shares"] == 500                      # 1,000株 → 半分の500株を売却
-    # 最終日の総資産 = 現金 + A 500株×1,200 + B 0株（100万円では B は 12,000円×100株=120万円 > 予算100万円）
+    huge = lots.simulate(ORDERS, SERIES, [], 20_000_000, "2026-11-09")         # 2,000万円なら B も100株買える
+    assert lots.summarize("x", 20_000_000, huge)["n_short"] == 0 and huge["state"]["holdings"]["B"]["shares"] == 100
     h = big["history"][-1]
     assert h["date"] == "2026-11-11" and h["total"] == h["cash"] + h["stock_value"]
     assert [x["date"] for x in big["history"]] == ["2026-11-09", "2026-11-10", "2026-11-11"]
