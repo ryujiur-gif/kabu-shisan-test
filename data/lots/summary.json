@@ -1,0 +1,130 @@
+{
+  "asof": "2026-11-13",
+  "lot": 100,
+  "scenarios": [
+    {
+      "name": "100万円",
+      "start": 1000000,
+      "total": 1000000,
+      "ret": 0.0,
+      "fees": 0,
+      "tax": 0,
+      "net": 1000000,
+      "net_ret": 0.0,
+      "cash_ratio": 1.0,
+      "n_orders": 8,
+      "n_bought": 0,
+      "n_short": 8,
+      "holdings": [],
+      "last_day_chg": 0.0,
+      "asof": "2026-11-13"
+    },
+    {
+      "name": "300万円",
+      "start": 3000000,
+      "total": 3007600,
+      "ret": 0.25,
+      "fees": 572,
+      "tax": 1427,
+      "net": 3005601,
+      "net_ret": 0.19,
+      "cash_ratio": 0.849,
+      "n_orders": 8,
+      "n_bought": 2,
+      "n_short": 6,
+      "holdings": [
+        {
+          "code": "3402",
+          "name": "東レ",
+          "shares": 200
+        },
+        {
+          "code": "8309",
+          "name": "三井住友トラストグループ",
+          "shares": 100
+        }
+      ],
+      "last_day_chg": -0.05,
+      "asof": "2026-11-13"
+    },
+    {
+      "name": "500万円",
+      "start": 5000000,
+      "total": 5021400,
+      "ret": 0.43,
+      "fees": 1122,
+      "tax": 4119,
+      "net": 5016159,
+      "net_ret": 0.32,
+      "cash_ratio": 0.802,
+      "n_orders": 8,
+      "n_bought": 3,
+      "n_short": 5,
+      "holdings": [
+        {
+          "code": "1803",
+          "name": "清水建設",
+          "shares": 100
+        },
+        {
+          "code": "3402",
+          "name": "東レ",
+          "shares": 300
+        },
+        {
+          "code": "8309",
+          "name": "三井住友トラストグループ",
+          "shares": 200
+        }
+      ],
+      "last_day_chg": -0.05,
+      "asof": "2026-11-13"
+    },
+    {
+      "name": "1,000万円",
+      "start": 10000000,
+      "total": 10107450,
+      "ret": 1.07,
+      "fees": 2486,
+      "tax": 21323,
+      "net": 10083641,
+      "net_ret": 0.84,
+      "cash_ratio": 0.675,
+      "n_orders": 8,
+      "n_bought": 5,
+      "n_short": 3,
+      "holdings": [
+        {
+          "code": "9022",
+          "name": "東海旅客鉄道",
+          "shares": 100
+        },
+        {
+          "code": "8725",
+          "name": "ＭＳ＆ＡＤインシュアランスグループホールディングス",
+          "shares": 100
+        },
+        {
+          "code": "1803",
+          "name": "清水建設",
+          "shares": 200
+        },
+        {
+          "code": "3402",
+          "name": "東レ",
+          "shares": 700
+        },
+        {
+          "code": "8309",
+          "name": "三井住友トラストグループ",
+          "shares": 500
+        }
+      ],
+      "last_day_chg": 0.09,
+      "asof": "2026-11-13"
+    }
+  ],
+  "main_ret": 1.16,
+  "bench_ret": 5.49,
+  "main_asof": "2026-11-13"
+}

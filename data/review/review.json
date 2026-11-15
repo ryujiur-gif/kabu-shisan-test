@@ -1,21 +1,25 @@
 {
- "today": "2026-11-13",
- "asof": "2026-11-12",
+ "today": "2026-11-16",
+ "asof": "2026-11-13",
  "portfolio": {
-  "asof": "2026-11-12",
-  "days": 4,
-  "mine": 1.21,
-  "bench": 4.93,
-  "diff": -3.72,
-  "cash_part": -4.41,
-  "selection_part": 0.74,
-  "avg_cash_ratio": 75,
+  "asof": "2026-11-13",
+  "days": 5,
+  "mine": 1.16,
+  "bench": 5.49,
+  "diff": -4.33,
+  "cash_part": -4.73,
+  "selection_part": 0.48,
+  "avg_cash_ratio": 70,
   "days_cash_over": 4
  },
  "overall": {
-  "n": 0
+  "n": 2,
+  "win": 100,
+  "beat": 100,
+  "avg_ret": 6.49,
+  "avg_x": 1.0
  },
- "n_buys": 6,
+ "n_buys": 8,
  "n_pending": 6,
  "buys": [
   {
@@ -43,25 +47,25 @@
    "vol_ratio": 1.52,
    "cross": null,
    "gap_open": 1.13,
-   "days": 4,
-   "latest": 4.08,
-   "asof": "2026-11-12",
-   "latest_x": -0.85,
+   "days": 5,
+   "latest": 6.02,
+   "asof": "2026-11-13",
+   "latest_x": 0.53,
    "sell_date": null,
    "r1": 3.11,
    "x1": 1.7,
    "r3": 1.37,
    "x3": -4.3,
-   "r5": null,
-   "x5": null,
+   "r5": 6.02,
+   "x5": 0.53,
    "r10": null,
    "x10": null,
    "r20": null,
    "x20": null,
-   "ret": null,
-   "x": null,
-   "basis": "評価中",
-   "verdict": "評価中"
+   "ret": 6.02,
+   "x": 0.53,
+   "basis": "5日後",
+   "verdict": "成功"
   },
   {
    "date": "2026-11-09",
@@ -87,25 +91,25 @@
    "vol_ratio": 1.14,
    "cross": null,
    "gap_open": 0.81,
-   "days": 4,
-   "latest": 5.79,
-   "asof": "2026-11-12",
-   "latest_x": 0.86,
+   "days": 5,
+   "latest": 6.96,
+   "asof": "2026-11-13",
+   "latest_x": 1.47,
    "sell_date": null,
    "r1": 2.76,
    "x1": 1.35,
    "r3": 4.97,
    "x3": -0.7,
-   "r5": null,
-   "x5": null,
+   "r5": 6.96,
+   "x5": 1.47,
    "r10": null,
    "x10": null,
    "r20": null,
    "x20": null,
-   "ret": null,
-   "x": null,
-   "basis": "評価中",
-   "verdict": "評価中"
+   "ret": 6.96,
+   "x": 1.47,
+   "basis": "5日後",
+   "verdict": "成功"
   },
   {
    "date": "2026-11-10",
@@ -133,10 +137,10 @@
    "vol_ratio": 1.15,
    "cross": null,
    "gap_open": 4.71,
-   "days": 3,
-   "latest": -1.64,
-   "asof": "2026-11-12",
-   "latest_x": -4.08,
+   "days": 4,
+   "latest": -5.86,
+   "asof": "2026-11-13",
+   "latest_x": -8.84,
    "sell_date": null,
    "r1": -2.83,
    "x1": -4.66,
@@ -176,10 +180,10 @@
    "vol_ratio": 3.51,
    "cross": "GC",
    "gap_open": 1.61,
-   "days": 3,
-   "latest": 4.9,
-   "asof": "2026-11-12",
-   "latest_x": 2.46,
+   "days": 4,
+   "latest": 4.27,
+   "asof": "2026-11-13",
+   "latest_x": 1.29,
    "sell_date": null,
    "r1": 0.7,
    "x1": -1.13,
@@ -222,15 +226,15 @@
    "vol_ratio": 3.05,
    "cross": "GC",
    "gap_open": 2.27,
-   "days": 2,
-   "latest": 3.33,
-   "asof": "2026-11-12",
-   "latest_x": 2.84,
+   "days": 3,
+   "latest": 2.19,
+   "asof": "2026-11-13",
+   "latest_x": 1.17,
    "sell_date": null,
    "r1": 3.07,
    "x1": 1.87,
-   "r3": null,
-   "x3": null,
+   "r3": 2.19,
+   "x3": 1.17,
    "r5": null,
    "x5": null,
    "r10": null,
@@ -265,13 +269,103 @@
    "vol_ratio": 2.93,
    "cross": null,
    "gap_open": 1.13,
-   "days": 1,
-   "latest": 2.4,
-   "asof": "2026-11-12",
-   "latest_x": 3.1,
+   "days": 2,
+   "latest": 3.27,
+   "asof": "2026-11-13",
+   "latest_x": 3.81,
    "sell_date": null,
    "r1": 2.4,
-   "x1": 3.1,
+   "x1": 3.47,
+   "r3": null,
+   "x3": null,
+   "r5": null,
+   "x5": null,
+   "r10": null,
+   "x10": null,
+   "r20": null,
+   "x20": null,
+   "ret": null,
+   "x": null,
+   "basis": "評価中",
+   "verdict": "評価中"
+  },
+  {
+   "date": "2026-11-13",
+   "code": "8309",
+   "name": "三井住友トラストグループ",
+   "price": 1769.5,
+   "shares": 57,
+   "amount": 100861,
+   "confidence": "中",
+   "reason": "11/12引け後に今期最終を3,800億→4,200億円（+10.5%、3期連続最高益）へ上方修正し、配当も実質7.4%増額（株探11/12）。上期最終は+46%で中計最終年度目標4,100億円を初年度で超える見込み。発表前の11/12終値は-0.06%で材料は未反映、25日線+2.1%・RSI59で過熱なし、上方修正後PER約11倍・PBR1.18倍は大手銀行で最も割安。米金利5.1%への上昇は銀行に追い風で、相場環境（中立・金利上昇）に合う②景気敏感型。高く寄り付く可能性があるため期待度は「中」。",
+   "tags": [
+    "上方修正",
+    "割安"
+   ],
+   "sector": "銀行",
+   "type": "②景気敏感型",
+   "mood": "中立",
+   "imminent": false,
+   "rsi14": 58.9,
+   "ma25_dev": 2.09,
+   "chg1d": -0.06,
+   "chg5d": 2.36,
+   "vol_ratio": 0.72,
+   "cross": null,
+   "gap_open": 4.74,
+   "days": 1,
+   "latest": 0.96,
+   "asof": "2026-11-13",
+   "latest_x": 1.09,
+   "sell_date": null,
+   "r1": 0.96,
+   "x1": 1.09,
+   "r3": null,
+   "x3": null,
+   "r5": null,
+   "x5": null,
+   "r10": null,
+   "x10": null,
+   "r20": null,
+   "x20": null,
+   "ret": null,
+   "x": null,
+   "basis": "評価中",
+   "verdict": "評価中"
+  },
+  {
+   "date": "2026-11-13",
+   "code": "5714",
+   "name": "ＤＯＷＡホールディングス",
+   "price": 8463.0,
+   "shares": 5,
+   "amount": 42315,
+   "confidence": "低",
+   "reason": "11/11に通期経常を800億→1,000億円へ上方修正、期末配当を338円→415円（3期連続増配、利回り約4.8%）に増額し、発行株の4.06%・上限160億円の自社株買いも発表（Zaikei・ザイ11/12）。11/12は出来高4.2倍で+10.9%と窓を開けて上放れ、25日線+6.4%・RSI61で過熱前、PER5.5倍・PBR0.95倍は同業比で大幅に割安。ただし前日+10.9%の急騰翌日で、金が-2.95%と下げており金属価格頼みの業績天井リスクもあるため、ルール2に従い期待度を「低」に下げて少額で買う。",
+   "tags": [
+    "上方修正",
+    "自社株買い",
+    "増配",
+    "割安"
+   ],
+   "sector": "非鉄・金属",
+   "type": "②景気敏感型",
+   "mood": "中立",
+   "imminent": false,
+   "rsi14": 60.6,
+   "ma25_dev": 6.42,
+   "chg1d": 10.92,
+   "chg5d": 8.71,
+   "vol_ratio": 4.2,
+   "cross": null,
+   "gap_open": -1.74,
+   "days": 1,
+   "latest": -0.9,
+   "asof": "2026-11-13",
+   "latest_x": -0.77,
+   "sell_date": null,
+   "r1": -0.9,
+   "x1": -0.77,
    "r3": null,
    "x3": null,
    "r5": null,
@@ -292,15 +386,54 @@
  "groups": {
   "conf": {
    "label": "期待度",
-   "buckets": {}
+   "buckets": {
+    "期待度 低": {
+     "n": 2,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.49,
+     "avg_x": 1.0,
+     "rest_n": 0,
+     "rest_avg": null
+    }
+   }
   },
   "type": {
    "label": "ビジネスモデルの型",
-   "buckets": {}
+   "buckets": {
+    "③ディフェンシブ型": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.02,
+     "avg_x": 0.53,
+     "rest_n": 1,
+     "rest_avg": 1.47
+    },
+    "②景気敏感型": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.96,
+     "avg_x": 1.47,
+     "rest_n": 1,
+     "rest_avg": 0.53
+    }
+   }
   },
   "mood": {
    "label": "相場環境",
-   "buckets": {}
+   "buckets": {
+    "リスクオフ（警戒）": {
+     "n": 2,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.49,
+     "avg_x": 1.0,
+     "rest_n": 0,
+     "rest_avg": null
+    }
+   }
   },
   "event": {
    "label": "重要イベント",
@@ -308,33 +441,168 @@
   },
   "chg1d": {
    "label": "前日の値動き",
-   "buckets": {}
+   "buckets": {
+    "前日マイナス（押し目）": {
+     "n": 2,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.49,
+     "avg_x": 1.0,
+     "rest_n": 0,
+     "rest_avg": null
+    }
+   }
   },
   "gap": {
    "label": "寄り付きの位置",
-   "buckets": {}
+   "buckets": {
+    "通常の寄り付き": {
+     "n": 2,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.49,
+     "avg_x": 1.0,
+     "rest_n": 0,
+     "rest_avg": null
+    }
+   }
   },
   "rsi": {
    "label": "RSI",
-   "buckets": {}
+   "buckets": {
+    "RSI50〜70": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.02,
+     "avg_x": 0.53,
+     "rest_n": 1,
+     "rest_avg": 1.47
+    },
+    "RSI50未満": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.96,
+     "avg_x": 1.47,
+     "rest_n": 1,
+     "rest_avg": 0.53
+    }
+   }
   },
   "ma25": {
    "label": "25日線乖離",
-   "buckets": {}
+   "buckets": {
+    "25日線の上（+10%未満）": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.02,
+     "avg_x": 0.53,
+     "rest_n": 1,
+     "rest_avg": 1.47
+    },
+    "25日線の下": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.96,
+     "avg_x": 1.47,
+     "rest_n": 1,
+     "rest_avg": 0.53
+    }
+   }
   },
   "vol": {
    "label": "出来高",
-   "buckets": {}
+   "buckets": {
+    "出来高ふつう": {
+     "n": 2,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.49,
+     "avg_x": 1.0,
+     "rest_n": 0,
+     "rest_avg": null
+    }
+   }
   },
   "tag": {
    "label": "材料",
-   "buckets": {}
+   "buckets": {
+    "材料：増配": {
+     "n": 2,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.49,
+     "avg_x": 1.0,
+     "rest_n": 0,
+     "rest_avg": null
+    },
+    "材料：割安": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.02,
+     "avg_x": 0.53,
+     "rest_n": 1,
+     "rest_avg": 1.47
+    },
+    "材料：国策・テーマ": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.02,
+     "avg_x": 0.53,
+     "rest_n": 1,
+     "rest_avg": 1.47
+    },
+    "材料：自社株買い": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.96,
+     "avg_x": 1.47,
+     "rest_n": 1,
+     "rest_avg": 0.53
+    }
+   }
   },
   "sector": {
    "label": "業種",
-   "buckets": {}
+   "buckets": {
+    "鉄道・バス": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.02,
+     "avg_x": 0.53,
+     "rest_n": 1,
+     "rest_avg": 1.47
+    },
+    "保険": {
+     "n": 1,
+     "win": 100,
+     "beat": 100,
+     "avg_ret": 6.96,
+     "avg_x": 1.47,
+     "rest_n": 1,
+     "rest_avg": 0.53
+    }
+   }
   }
  },
  "patterns": [],
- "cases_due": []
+ "cases_due": [
+  {
+   "key": "## 2026-11-09 買 9022",
+   "when": "2026-11-09",
+   "title": "東海旅客鉄道（9022）2026-11-09 買い → 5営業日後 +6.02%（日経平均との差 +0.53%）：成功"
+  },
+  {
+   "key": "## 2026-11-09 買 8725",
+   "when": "2026-11-09",
+   "title": "ＭＳ＆ＡＤインシュアランスグループホールディングス（8725）2026-11-09 買い → 5営業日後 +6.96%（日経平均との差 +1.47%）：成功"
+  }
+ ]
 }
