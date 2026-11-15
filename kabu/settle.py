@@ -139,8 +139,10 @@ def run(today: date, data_dir: Path, fetch=None, actions_fetch=None, even_if_hol
     from kabu import corporate
     acts, act_failed = {}, []
     if use_actions:
-        since = corporate.day_after(state["actions_through"]) if state.get("actions_through")             else date.fromisoformat(state["start_date"])
-        codes = list(state["holdings"]) + [x["code"] for _, o in pending for x in o.get("buys", [])]
+        # 毎回、運用開始（最大120日前）までさかのぼって確かめる。記録済みのものは corporate.apply が飛ばす
+        since = corporate.window_start(state, p)
+        codes = corporate.codes_to_check(state, read_rows(data_dir / "trades.csv"), since,
+                                         [x["code"] for _, o in pending for x in o.get("buys", [])])
         acts, act_failed = corporate.collect(codes, since, p, fetch=actions_fetch)
         if act_failed:
             notes.append(f"配当・分割の確認ができませんでした（{', '.join(act_failed)}）。次回に確認します")

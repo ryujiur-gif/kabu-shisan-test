@@ -182,6 +182,62 @@ def check_notes(order: dict, notes_dir, today: str, max_age_days: int = 90) -> l
     return errs
 
 
+STOP_LOSS = -8.0       # 取得価格からこの率（%）以下に下がった持ち株は売る（ROUTINE.md 手順4-2 の1）
+MIN_HOLD_DAYS = 5      # 買ってからこの営業日数たつまでは、損切り・悪材料以外で売らない
+SELL_RULES = (1, 2, 3, 4, 5)
+
+
+def holding_pl(state: dict, code: str) -> float | None:
+    """持ち株の損益率（%）。前回終値が無ければ None。"""
+    h = state["holdings"].get(code)
+    px = state.get("last_closes", {}).get(code)
+    if not h or not px or not h.get("avg_cost"):
+        return None
+    return (px / h["avg_cost"] - 1) * 100
+
+
+def last_buy_dates(trades: list[dict]) -> dict:
+    out = {}
+    for t in trades:
+        if t["side"] == "買" and t.get("status") == "約定":
+            out[t["code"]] = max(out.get(t["code"], ""), t["date"])
+    return out
+
+
+def check_sell_rules(order: dict, state: dict, trades: list[dict], today: str) -> list[str]:
+    """売りの決まり（手順4-2）を数値で確かめる。
+    - 損切り：取得価格から -8% 以下の持ち株は、全部売る（多いときは損失の大きい順に2銘柄）。
+    - 早売りの防止：買ってから5営業日以内の持ち株は、損切り（-8%以下）か、
+      「買った理由が崩れた」（sells に "rule": 2 と明記）のときしか売れない。"""
+    from datetime import date
+    from kabu.earnings import trading_days_until
+    errs = []
+    sells = {s.get("code"): s for s in order.get("sells", [])}
+    pl = {c: holding_pl(state, c) for c in state["holdings"]}
+    losers = sorted((c for c, v in pl.items() if v is not None and v <= STOP_LOSS), key=lambda c: pl[c])
+    for c in losers[:2]:
+        s = sells.get(c)
+        name = state["holdings"][c].get("name", "")
+        if not s:
+            errs.append(f"持ち株 {c}（{name}）は取得価格から {pl[c]:+.1f}% で、損切りの基準（{STOP_LOSS:.0f}%以下）に当たります。"
+                        "売り（全部）に入れてください")
+        elif s.get("portion", "全部") != "全部":
+            errs.append(f"売り {c}（{name}）は損切りの基準に当たるので、半分ではなく全部売ってください")
+    bought = last_buy_dates(trades)
+    t = date.fromisoformat(today)
+    for c, s in sells.items():
+        if s.get("rule") is not None and s.get("rule") not in SELL_RULES:
+            errs.append(f"売り {c} の rule は 1〜5 の数字にしてください（手順4-2 のどの基準か）")
+        b = bought.get(c)
+        if not b or c in losers or s.get("rule") == 2:
+            continue
+        days = trading_days_until(date.fromisoformat(b), t)
+        if 0 <= days < MIN_HOLD_DAYS:
+            errs.append(f"売り {c} は {b} に買ったばかりです（{days}営業日目。{MIN_HOLD_DAYS}営業日たつまでは損切り・悪材料以外で売らない）。"
+                        "保有を続けるか、買った理由が崩れた悪材料があるなら sells に \"rule\": 2 と書き、理由にその悪材料を具体的に書いてください")
+    return errs
+
+
 RSI_LIMIT = 75.0       # これ以上は飛びつき買いとして買わない（ROUTINE.md 手順4-3 b）
 MA25_LIMIT = 15.0
 CASES_PER_DAY = 3      # 1日に求める振り返りの件数の上限

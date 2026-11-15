@@ -8,7 +8,7 @@ import json
 import sys
 from pathlib import Path
 
-from kabu.picks import (check_entry_rules, check_learning, check_note_quality, check_notes,
+from kabu.picks import (check_entry_rules, check_learning, check_note_quality, check_notes, check_sell_rules,
                         load_sectors, load_universe, pattern_cautions, validate_order)
 from kabu.report import build_email, build_site
 from kabu.settle import jst_today, read_rows
@@ -74,6 +74,7 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
         from kabu import earnings as _earn
         cal = _earn.load(data / "earnings.csv")
         errs = check_entry_rules(order, indicators, (b or {}).get("imminent"), earnings=cal, today=today)
+        errs += check_sell_rules(order, state, read_rows(data / "trades.csv"), today)
         errs += check_learning(order, review, journal, playbook)
     if errs:
         return 1, errs

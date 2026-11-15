@@ -151,6 +151,78 @@ def test_settle_dividend_and_actions_failure(tmp_path):
     assert state["cash"] == 3000 and state["actions_through"] == "2026-11-10" and "3,000円を入金" in res["message"]
 
 
+def test_late_dividend_is_picked_up_once_even_after_selling(tmp_path):
+    """配当のデータが遅れて公開されても、さかのぼって入金する。売った後でも受け取り、二重には入れない。"""
+    st = new_state("2026-11-09")
+    st["cash"] = 1_010_000
+    st["last_date"], st["actions_through"] = "2026-11-11", "2026-11-11"   # 11/11 までは「配当なし」で確認済み
+    _setup(tmp_path, st)
+    (tmp_path / "trades.csv").write_text(
+        "date,side,code,name,shares,price,amount,status,reason\n"
+        "2026-11-09,買,7203,トヨタ,100,1000.0,100000,約定,r\n"
+        "2026-11-11,売,7203,トヨタ,100,1100.0,110000,約定,r\n", encoding="utf-8")
+    px = lambda t, d: {"open": 1000.0, "close": 1000.0}
+    late = lambda c, s, e: [{"date": "2026-11-10", "type": "配当", "value": 20.0}]   # 権利落ち日は売る前
+    thu, fri = date(2026, 11, 12), date(2026, 11, 13)
+    res = settle_run(thu, tmp_path, fetch=px, actions_fetch=late)
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert state["cash"] == 1_012_000 and "トヨタ" in res["message"] and "2,000円を入金" in res["message"]
+    settle_run(fri, tmp_path, fetch=px, actions_fetch=late)            # 翌日も同じデータが返る
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert state["cash"] == 1_012_000
+    rows = (tmp_path / "trades.csv").read_text(encoding="utf-8").count(",配当,")
+    assert rows == 1 and replay_cash(tmp_path) == 1_012_000
+
+
+def replay_cash(tmp_path):
+    from kabu.settle import read_rows
+    return replay(read_rows(tmp_path / "trades.csv"))["cash"]
+
+
+def test_codes_to_check_includes_recently_sold():
+    st = held("A")
+    trades = [{"date": "2026-11-11", "side": "売", "code": "B"}, {"date": "2026-07-01", "side": "売", "code": "C"}]
+    assert corporate.codes_to_check(st, trades, date(2026, 11, 9), ["D"]) == ["A", "D", "B"]
+    st["start_date"] = "2026-01-05"
+    assert corporate.window_start(st, date(2026, 11, 13)) == date(2026, 7, 16)   # 120日前まで
+
+
+# ---- 売りの決まりの点検（損切り・早売りの防止）----
+
+def _sell_state():
+    st = new_state("2026-11-02")
+    st["holdings"] = {"A": {"name": "a", "shares": 10, "avg_cost": 1000.0},
+                      "B": {"name": "b", "shares": 10, "avg_cost": 1000.0},
+                      "C": {"name": "c", "shares": 10, "avg_cost": 1000.0}}
+    st["last_closes"] = {"A": 910.0, "B": 1050.0, "C": 1200.0}     # A は -9%
+    trades = [{"date": "2026-11-02", "side": "買", "code": "A", "status": "約定"},
+              {"date": "2026-11-12", "side": "買", "code": "B", "status": "約定"},
+              {"date": "2026-11-02", "side": "買", "code": "C", "status": "約定"}]
+    return st, trades
+
+
+def test_stop_loss_must_be_sold_in_full():
+    from kabu.picks import check_sell_rules
+    st, tr = _sell_state()
+    errs = check_sell_rules({"sells": []}, st, tr, "2026-11-16")
+    assert len(errs) == 1 and "損切りの基準" in errs[0] and "-9.0%" in errs[0]
+    errs = check_sell_rules({"sells": [{"code": "A", "portion": "半分"}]}, st, tr, "2026-11-16")
+    assert any("半分ではなく全部" in e for e in errs)
+    assert check_sell_rules({"sells": [{"code": "A"}]}, st, tr, "2026-11-16") == []
+
+
+def test_no_selling_within_five_trading_days_unless_bad_news():
+    from kabu.picks import check_sell_rules
+    st, tr = _sell_state()
+    st["last_closes"]["A"] = 1000.0                                  # 損切りなしの状態にする
+    errs = check_sell_rules({"sells": [{"code": "B"}]}, st, tr, "2026-11-16")       # 11/12 買い → 2営業日目
+    assert len(errs) == 1 and "買ったばかり" in errs[0] and "2営業日目" in errs[0]
+    assert check_sell_rules({"sells": [{"code": "B", "rule": 2}]}, st, tr, "2026-11-16") == []
+    assert check_sell_rules({"sells": [{"code": "B"}]}, st, tr, "2026-11-19") == []  # 5営業日たてば売れる
+    assert check_sell_rules({"sells": [{"code": "C"}]}, st, tr, "2026-11-16") == []  # 古い持ち株は自由
+    assert any("rule は 1〜5" in e for e in check_sell_rules({"sells": [{"code": "C", "rule": 9}]}, st, tr, "2026-11-16"))
+
+
 def test_settle_even_if_holiday(tmp_path):
     st = held("7203", 100, 1000.0, cash=0)
     st["last_date"] = "2026-11-12"

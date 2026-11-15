@@ -51,22 +51,48 @@ def eligible_shares(trades: list[dict], code: str, ex_date: str) -> int:
     return h["shares"] if h else 0
 
 
+LOOKBACK_DAYS = 120   # 配当のデータは権利落ち日より遅れて公開されることがあるので、さかのぼって確かめる
+
+
+def window_start(state: dict, p: date) -> date:
+    return max(date.fromisoformat(state["start_date"]), p - timedelta(days=LOOKBACK_DAYS))
+
+
+def codes_to_check(state: dict, trades: list[dict], since: date, extra: list[str] = ()) -> list[str]:
+    """確かめる銘柄：いまの持ち株・これから買う銘柄・期間内に売った銘柄（売る前の配当を受け取るため）。"""
+    sold = [t["code"] for t in trades if t["side"] == "売" and t["date"] >= since.isoformat()]
+    return list(dict.fromkeys(list(state["holdings"]) + list(extra) + sold))
+
+
+def already_recorded(trades: list[dict], ex_date: str, code: str, kind: str) -> bool:
+    return any(t["date"] == ex_date and t["code"] == code and t["side"] == kind for t in trades)
+
+
+def _name_of(trades: list[dict], code: str) -> str:
+    return next((t.get("name", "") for t in reversed(trades) if t["code"] == code and t.get("name")), "")
+
+
 def apply(state: dict, trades: list[dict], ex_date: str, actions: list[tuple]) -> list[dict]:
-    """ex_date の配当・分割を state に反映し、記録する行を返す（state は書き換える）。"""
+    """ex_date の配当・分割を state に反映し、記録する行を返す（state は書き換える）。
+    すでに記録済みのものは飛ばす。配当は、権利落ち日の前日まで持っていれば、その後に売っていても受け取る。"""
     from kabu.ledger import apply_split
     rows = []
     for code, kind, value in actions:
+        if already_recorded(trades + rows, ex_date, code, kind):
+            continue
         h = state["holdings"].get(code)
-        n = min(eligible_shares(trades + rows, code, ex_date), h["shares"] if h else 0)
-        if not h or n <= 0:
+        n = eligible_shares(trades + rows, code, ex_date)
+        if n <= 0:
             continue
         if kind == "配当":
             amount = int(n * value)
             state["cash"] += amount
-            rows.append({"date": ex_date, "side": "配当", "code": code, "name": h["name"], "shares": n,
+            name = h["name"] if h else _name_of(trades, code)
+            rows.append({"date": ex_date, "side": "配当", "code": code, "name": name, "shares": n,
                          "price": round(value, 4), "amount": amount, "status": "入金",
                          "reason": f"配当（1株 {value:g}円・権利落ち日 {ex_date}）"})
-        elif kind == "分割":
+        elif kind == "分割" and h:
+            n = min(n, h["shares"])
             old = h["shares"]
             new = apply_split(h, n, value)
             rows.append({"date": ex_date, "side": "分割", "code": code, "name": h["name"], "shares": new,
