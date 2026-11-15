@@ -8,7 +8,7 @@ import json
 from datetime import date, timedelta
 from pathlib import Path
 
-from kabu.ledger import START_CASH, funds
+from kabu.ledger import START_CASH, funds, load_fee
 from kabu.market_calendar import previous_trading_day
 
 
@@ -59,7 +59,7 @@ def build(root: Path, today: date) -> dict:
               f"損益：{_signed(total - START_CASH)}（{(total / START_CASH - 1) * 100:+.2f}%）",
               f"日経平均に同額投資した場合：{_yen(bench)}（{(bench / START_CASH - 1) * 100:+.2f}%）",
               f"日経平均との差：{_signed(total - bench)}",
-              after_tax_line(total, trades, float(cfg.get("fee_rate", 0.0)))]
+              after_tax_line(total, trades, load_fee(cfg))]
         dd = stats.max_drawdown(hist)
         if dd and dd["pct"] < 0:
             L.append(f"最大下落幅：{dd['pct']:.2f}%（{dd['peak_date'][5:]} の最高額から {dd['date'][5:]} まで）")

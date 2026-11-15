@@ -175,10 +175,31 @@ def replay(trades: list[dict]) -> dict:
     return {"cash": cash, "holdings": holdings}
 
 
-def after_tax(total: int, trades: list[dict], fee_rate: float = 0.0, start: int = START_CASH) -> dict:
-    """手数料と税を引いた概算（いま全部売った場合）。利益が出ているときだけ税がかかる。"""
-    turnover = sum(int(t["amount"]) for t in trades if t["side"] in ("買", "売") and t.get("status") == "約定")
-    fees = int(turnover * fee_rate)
+def fee_for(amount: float, fee) -> int:
+    """1回の注文の手数料。fee は料率（例 0.001）か、段階制の表 [[約定代金の上限, 手数料], ...]（上限 None は「それ以上」）。"""
+    if not fee or amount <= 0:
+        return 0
+    if isinstance(fee, (int, float)):
+        return int(amount * fee)
+    for limit, yen in fee:
+        if limit is None or amount <= limit:
+            return int(yen)
+    return int(fee[-1][1])
+
+
+def load_fee(cfg: dict):
+    """config.json から手数料の設定を読む（fee_table があれば優先、無ければ fee_rate）。"""
+    return cfg.get("fee_table") or float(cfg.get("fee_rate", 0.0))
+
+
+def after_tax(total: int, trades: list[dict], fee_rate=0.0, start: int = START_CASH) -> dict:
+    """手数料と税を引いた概算（いま全部売った場合）。利益が出ているときだけ税がかかる。
+    手数料は、これまでの売買の分と、いまの持ち株を1銘柄ずつ売る分の合計。"""
+    done = [t for t in trades if t["side"] in ("買", "売") and t.get("status") == "約定"]
+    turnover = sum(int(t["amount"]) for t in done)
+    fees = sum(fee_for(int(t["amount"]), fee_rate) for t in done)
+    if fee_rate:
+        fees += sum(fee_for(h["shares"] * h["avg_cost"], fee_rate) for h in replay(trades)["holdings"].values())
     gain = total - fees - start
     tax = int(gain * TAX_RATE) if gain > 0 else 0
     return {"fees": fees, "tax": tax, "net": total - fees - tax, "turnover": turnover}

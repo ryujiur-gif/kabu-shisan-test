@@ -47,7 +47,7 @@ def sell_word(s: dict, state: dict) -> str:
     return "全株売却"
 
 
-def after_tax_line(total: int, trades: list | None, fee_rate: float) -> str:
+def after_tax_line(total: int, trades: list | None, fee_rate) -> str:
     a = after_tax(int(total), trades or [], fee_rate)
     fee = f"手数料 {a['fees']:,}円・" if fee_rate else ""
     return f"手数料・税引き後の概算（いま全部売った場合）：{_yen(a['net'])}（{fee}税 {a['tax']:,}円）"

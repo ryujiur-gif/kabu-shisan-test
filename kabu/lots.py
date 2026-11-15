@@ -12,7 +12,7 @@ import csv
 import json
 from pathlib import Path
 
-from kabu.ledger import apply_split, settle
+from kabu.ledger import after_tax, apply_split, load_fee, settle
 
 LOT = 100
 SCENARIOS = [("100万円", 1_000_000), ("300万円", 3_000_000), ("500万円", 5_000_000), ("1,000万円", 10_000_000)]
@@ -68,7 +68,7 @@ def simulate(orders: dict, series: dict, actions: list[dict], start_cash: int, s
     return {"history": history, "trades": trades, "state": state}
 
 
-def summarize(name: str, start_cash: int, sim: dict) -> dict:
+def summarize(name: str, start_cash: int, sim: dict, fee=0.0) -> dict:
     hist, tr = sim["history"], sim["trades"]
     buys = [t for t in tr if t["side"] == "買"]
     done = [t for t in buys if t["status"] == "約定"]
@@ -77,7 +77,10 @@ def summarize(name: str, start_cash: int, sim: dict) -> dict:
     wk = None
     if len(hist) >= 2:
         wk = round((hist[-1]["total"] / hist[-2]["total"] - 1) * 100, 2)
+    net = after_tax(total, tr, fee, start=start_cash)
     return {"name": name, "start": start_cash, "total": total, "ret": round((total / start_cash - 1) * 100, 2),
+            "fees": net["fees"], "tax": net["tax"], "net": net["net"],
+            "net_ret": round((net["net"] / start_cash - 1) * 100, 2),
             "cash_ratio": round(hist[-1]["cash"] / total, 3) if hist and total else 1.0,
             "n_orders": len(buys), "n_bought": len(done), "n_short": len(short),
             "holdings": [{"code": c, "name": h["name"], "shares": h["shares"]} for c, h in sim["state"]["holdings"].items()],
@@ -117,10 +120,14 @@ def update(root: Path, series: dict) -> dict | None:
     orders = load_orders(data)
     acts = [t for t in read_rows(data / "trades.csv") if t["side"] in ("配当", "分割")]
     start_date = state["start_date"]
+    try:
+        fee = load_fee(json.loads((Path(root) / "config.json").read_text(encoding="utf-8")))
+    except (OSError, json.JSONDecodeError):
+        fee = 0.0
     rows, scen = [], []
     for name, cash in SCENARIOS:
         sim = simulate(orders, series, acts, cash, start_date)
-        scen.append(summarize(name, cash, sim))
+        scen.append(summarize(name, cash, sim, fee))
         rows += [{"date": h["date"], "scenario": name, **{k: h[k] for k in ("total", "cash", "stock_value")}}
                  for h in sim["history"]]
     # 比較の相手：本体（1株単位）と日経平均
@@ -157,8 +164,10 @@ def lines(s: dict | None) -> list[str]:
         L.append(f"1株単位（本体）：{s['main_ret']:+.2f}%／日経平均：{s['bench_ret']:+.2f}%")
     for x in s["scenarios"]:
         skip = f"・{x['n_short']}件は100株に届かず買えず" if x["n_short"] else ""
+        net = f"・手数料と税を引くと {x['net_ret']:+.2f}%（手数料 {x['fees']:,}円・税 {x['tax']:,}円）" \
+            if x.get("net_ret") is not None and (x.get("fees") or x.get("tax")) else ""
         L.append(f"・資金{x['name']}：{x['ret']:+.2f}%（{x['total']:,}円）　買えた予想 {x['n_bought']}/{x['n_orders']}件{skip}"
-                 f"・現金 {x['cash_ratio']:.0%}")
+                 f"・現金 {x['cash_ratio']:.0%}{net}")
     L.append("※同じ予想を100株単位で売買した試算です。予想どおりに買えない資金では、成績が本体と大きく変わります。")
     return L
 
@@ -169,7 +178,8 @@ def site_section(s: dict | None) -> str:
         return ""
     cls = lambda v: "up" if v >= 0 else "down"
     rows = "".join(
-        f"<tr><td>資金 {H.escape(x['name'])}</td><td class='{cls(x['ret'])}'>{x['ret']:+.2f}%<small>{x['total']:,}円</small></td>"
+        f"<tr><td>資金 {H.escape(x['name'])}</td><td class='{cls(x['ret'])}'>{x['ret']:+.2f}%<small>{x['total']:,}円"
+        + (f"・手数料と税を引くと {x['net_ret']:+.2f}%" if x.get('net_ret') is not None else "") + "</small></td>"
         f"<td>{x['n_bought']}/{x['n_orders']}件<small>100株に届かず {x['n_short']}件</small></td>"
         f"<td>{x['cash_ratio']:.0%}</td><td>{len(x['holdings'])}銘柄</td></tr>" for x in s["scenarios"])
     head = ""

@@ -248,13 +248,31 @@ def test_settle_skips_high_open_using_saved_indicators(tmp_path):
 # ---- 手数料・税引き後 ----
 
 def test_after_tax():
-    trades = [{"side": "買", "status": "約定", "amount": "100000"}, {"side": "売", "status": "約定", "amount": "120000"},
-              {"side": "配当", "status": "入金", "amount": "500"}]
+    t = lambda d, side, shares, price, amount, status="約定": {
+        "date": d, "side": side, "code": "A", "name": "a", "shares": shares, "price": price, "amount": amount, "status": status}
+    trades = [t("2026-11-09", "買", 100, 1000, "100000"), t("2026-11-10", "売", 100, 1200, "120000"),
+              t("2026-11-11", "配当", 100, 5, "500", "入金")]
     a = after_tax(1_100_000, trades)
     assert a == {"fees": 0, "tax": 20315, "net": 1_079_685, "turnover": 220_000}
     a = after_tax(1_100_000, trades, fee_rate=0.001)
     assert a["fees"] == 220 and a["tax"] == int((100_000 - 220) * 0.20315)
     assert after_tax(950_000, trades)["tax"] == 0   # 損失のときは税なし
+
+
+def test_fee_table_per_order_and_selling_out():
+    from kabu.ledger import fee_for, load_fee
+    table = [[100000, 77], [200000, 99], [500000, 187], [None, 1100]]
+    assert [fee_for(x, table) for x in (0, 46409, 100000, 100001, 300000, 9_000_000)] == [0, 77, 77, 99, 187, 1100]
+    assert fee_for(100000, 0.001) == 100 and fee_for(100000, 0) == 0 and fee_for(100000, None) == 0
+    assert load_fee({"fee_table": table, "fee_rate": 0.5}) == table and load_fee({"fee_rate": 0.002}) == 0.002
+    assert load_fee({}) == 0.0
+    t = lambda d, side, shares, price, amount: {
+        "date": d, "side": side, "code": side + d, "name": "a", "shares": shares, "price": price, "amount": amount, "status": "約定"}
+    # 5万円の買い（77円）と 30万円の買い（187円）。どちらも持ったまま → 売るときの分 77円＋187円 も引く
+    trades = [t("2026-11-09", "買", 50, 1000, "50000"), t("2026-11-10", "買", 300, 1000, "300000")]
+    a = after_tax(1_010_000, trades, table)
+    assert a["fees"] == 77 + 187 + 77 + 187 and a["tax"] == int((10_000 - 528) * 0.20315)
+    assert a["net"] == 1_010_000 - 528 - a["tax"]
 
 
 # ---- 決算日 ----

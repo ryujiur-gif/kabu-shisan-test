@@ -103,7 +103,8 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
     cfg_p = root / "config.json"
     cfg = json.loads(cfg_p.read_text(encoding="utf-8")) if cfg_p.exists() else {}
     site_url = cfg.get("site_url", "")
-    fee_rate = float(cfg.get("fee_rate", 0.0))
+    from kabu.ledger import load_fee
+    fee_rate = load_fee(cfg)
     (root / "out").mkdir(exist_ok=True)
     market, gap = (b.get("market"), b.get("gap")) if b else (None, None)
     notices = notices_for(today, data, b)
