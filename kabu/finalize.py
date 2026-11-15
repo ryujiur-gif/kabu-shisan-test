@@ -99,6 +99,7 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
     trades = read_rows(data / "trades.csv")
     last_date = max((t["date"] for t in trades), default=None)
     last = [t for t in trades if t["date"] == last_date]
+    from kabu import lots as _lots
     cfg_p = root / "config.json"
     cfg = json.loads(cfg_p.read_text(encoding="utf-8")) if cfg_p.exists() else {}
     site_url = cfg.get("site_url", "")
@@ -108,11 +109,13 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
     notices = notices_for(today, data, b)
     (root / "out" / "email.json").write_text(
         json.dumps(build_email(order, state, hist, last, site_url, market=market, notices=notices, gap=gap,
-                               review=review, cautions=cautions, all_trades=trades, fee_rate=fee_rate),
+                               review=review, cautions=cautions, all_trades=trades, fee_rate=fee_rate,
+                               lots=_lots.load(root)),
                    ensure_ascii=False, indent=2),
         encoding="utf-8")
     (root / "docs").mkdir(exist_ok=True)
-    (root / "docs" / "index.html").write_text(build_site(state, hist, trades, order, review=review, sectors=sectors, fee_rate=fee_rate),
+    (root / "docs" / "index.html").write_text(build_site(state, hist, trades, order, review=review, sectors=sectors, fee_rate=fee_rate,
+                                                        lots=_lots.load(root)),
         encoding="utf-8")
     return 0, []
 

@@ -103,6 +103,10 @@ def build(root: Path, today: date) -> dict:
         for p in (rv.get("patterns") or [])[:3]:
             L.append(f"・【{p['level']}・{p['kind']}】{p['bucket']}（{p['n']}件）→ {p['advice']}")
         L.append("")
+    from kabu import lots as _lots
+    lot_l = _lots.lines(_lots.load(root))
+    if lot_l:
+        L += ["【100株単位で売買した場合（実用化の検討用）】"] + [x for x in lot_l[2:]] + [""]
     ev = upcoming(load_events(data / "events.csv"), today, days=9)
     L.append("【来週の主な予定】")
     L += [f"・{e['start'].month}/{e['start'].day} {e['event']}（重要度：{e['importance'] or '-'}）" for e in ev] or ["・登録された予定はありません"]
@@ -118,6 +122,16 @@ def main():
     ap.add_argument("--root", default=".")
     a = ap.parse_args()
     today = date.fromisoformat(a.today) if a.today else jst_today()
+    try:   # 金曜の終値まで入れて、100株単位の試算を計算し直す
+        from kabu import lots
+        from kabu.briefing import fetch_series, merge_nikkei
+        from kabu.settle import read_rows
+        codes = lots.order_codes(Path(a.root) / "data")
+        _, series = fetch_series(codes, codes, today)
+        series["N225"] = merge_nikkei(series.get("N225") or [], read_rows(Path(a.root) / "data" / "history.csv"))
+        lots.update(Path(a.root), series)
+    except Exception as e:
+        print("100株単位の試算を更新できませんでした:", e)
     out = build(Path(a.root), today)
     d = Path(a.root) / "data" / "weekly"
     d.mkdir(parents=True, exist_ok=True)

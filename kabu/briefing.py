@@ -457,7 +457,9 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     notes += [f"{m['label']}（{m['ticker']}）" for m in market if m["close"] is None]
     codes = list(dict.fromkeys(list(names) + list(state["holdings"])))
     all_trades = read_rows(root / "data" / "trades.csv")
-    keep = list(dict.fromkeys([t["code"] for t in all_trades] + list(state["holdings"])))
+    from kabu import lots as _lots
+    keep = list(dict.fromkeys([t["code"] for t in all_trades] + list(state["holdings"])
+                              + _lots.order_codes(root / "data")))
     try:
         ind, series = fetch_series(codes, keep, tday)
     except Exception as e:
@@ -525,6 +527,10 @@ def build(root: Path, today: str) -> tuple[str, dict]:
         review_md = _review.briefing_lines(rv, _review.read_text(root / "data" / "review" / "playbook.md"))
     except Exception as e:
         notes.append(f"予想の振り返りの集計に失敗: {e}")
+    try:   # 100株単位で売買した場合の試算（実用化の検討用。朝の判断には使わない）
+        _lots.update(root, series)
+    except Exception as e:
+        notes.append(f"100株単位の試算に失敗: {e}")
     md = render_briefing(today, market, holdings, ranks, names, notes, fund=fund, fund_date=fund_date,
                          regime=regime, funds_info=funds_info, review_md=review_md, health=problems,
                          crosses=cross_lists({c: ind.get(c) for c in names}),

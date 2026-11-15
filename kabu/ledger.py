@@ -45,11 +45,11 @@ def _trade(date, side, item, shares, price, status):
             "reason": item.get("reason", "")}
 
 
-def sell_shares(held: int, portion: str | None) -> int:
-    """売る株数。「半分」は切り捨て（最低1株）。1株しか無ければ全部売る。"""
-    if PORTIONS.get(portion or "全部", 1.0) >= 1.0 or held <= 1:
+def sell_shares(held: int, portion: str | None, lot: int = 1) -> int:
+    """売る株数。「半分」は売買単位（lot）に切り捨て（最低1単位）。1単位しか無ければ全部売る。"""
+    if PORTIONS.get(portion or "全部", 1.0) >= 1.0 or held <= lot:
         return held
-    return max(1, held // 2)
+    return max(lot, held // 2 // lot * lot)
 
 
 def open_gap(price: float, ref_close: float | None) -> float | None:
@@ -60,8 +60,9 @@ def open_gap(price: float, ref_close: float | None) -> float | None:
 
 
 def settle(state: dict, order: dict, opens: dict[str, float],
-           ref_closes: dict[str, float] | None = None) -> tuple[dict, list[dict]]:
-    """注文を始値で約定する。ref_closes（前日終値）があれば、始値が高すぎる買いを見送る。"""
+           ref_closes: dict[str, float] | None = None, lot: int = 1) -> tuple[dict, list[dict]]:
+    """注文を始値で約定する。ref_closes（前日終値）があれば、始値が高すぎる買いを見送る。
+    lot は売買単位（本体は1株。100株単位の試算では100）。"""
     st = copy.deepcopy(state)
     d = order["date"]
     total = funds(st, opens)["total"]  # 購入額の基準は約定日の始値で見た総資産
@@ -73,7 +74,7 @@ def settle(state: dict, order: dict, opens: dict[str, float],
         if not h or not price:
             trades.append(_trade(d, "売", item, 0, 0, "取消"))
             continue
-        n = sell_shares(h["shares"], item.get("portion"))
+        n = sell_shares(h["shares"], item.get("portion"), lot)
         st["cash"] += int(n * price)
         trades.append(_trade(d, "売", {**item, "name": item.get("name") or h["name"]}, n, price, "約定"))
         h["shares"] -= n
@@ -92,7 +93,7 @@ def settle(state: dict, order: dict, opens: dict[str, float],
                                            f"元の理由：{item.get('reason', '')}"}, 0, price, "見送り"))
             continue
         budget = min(amount_for(item["confidence"], total), st["cash"])
-        shares = int(budget // price)
+        shares = int(budget // price) // lot * lot
         if shares <= 0:
             trades.append(_trade(d, "買", item, 0, price, "見送り"))
             continue

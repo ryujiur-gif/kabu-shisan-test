@@ -54,7 +54,7 @@ def after_tax_line(total: int, trades: list | None, fee_rate: float) -> str:
 
 
 def build_email(order, state, history_rows, last_trades, site_url, market=None, notices=None, gap=None,
-                review=None, cautions=None, all_trades=None, fee_rate: float = 0.0) -> dict:
+                review=None, cautions=None, all_trades=None, fee_rate: float = 0.0, lots=None) -> dict:
     d = date.fromisoformat(order["date"])
     buys = "・".join(b["name"] for b in order["buys"]) or "なし"
     sells = "・".join(s["name"] for s in order["sells"]) or "なし"
@@ -131,6 +131,8 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
             px = closes.get(c, hd["avg_cost"])
             pl = (px - hd["avg_cost"]) * hd["shares"]
             L.append(f"・{hd['name']}（{c}）{hd['shares']:,}株 取得{hd['avg_cost']:,.1f}→{px:,.1f}円 {_signed(pl)}")
+    from kabu.lots import lines as lot_lines
+    L += lot_lines(lots)
     L += ["", f"成績ページ：{site_url}", "", NOTE]
     return {"subject": subject, "body": "\n".join(L) + "\n"}
 
@@ -256,7 +258,9 @@ def stats_section(state, history_rows, trades_rows, sectors=None, fee_rate: floa
     return "<section class='card'><h2>成績の内訳</h2>" + "".join(parts) + "</section>"
 
 
-def build_site(state, history_rows, trades_rows, order, review=None, sectors=None, fee_rate: float = 0.0) -> str:
+def build_site(state, history_rows, trades_rows, order, review=None, sectors=None, fee_rate: float = 0.0,
+               lots=None) -> str:
+    from kabu.lots import site_section as lot_section
     closes = state.get("last_closes", {})
     if history_rows:
         h = history_rows[-1]
@@ -310,6 +314,7 @@ def build_site(state, history_rows, trades_rows, order, review=None, sectors=Non
 <section class="card"><h2>最新の予想（{_e(order['date'] if order else '-')}）</h2>{picks}</section>
 {review_section(review)}
 {stats_section(state, history_rows, trades_rows, sectors, fee_rate)}
+{lot_section(lots)}
 <section class="card"><h2>持ち株</h2><div class="scroll"><table><tr><th>銘柄</th><th>株数</th><th>取得単価</th><th>現在値</th><th>損益</th></tr>{hold_rows}</table></div>
 <p class="sub" style="margin:8px 0 0">現金：{_yen(state['cash'])}</p></section>
 <section class="card"><h2>取引履歴</h2><div class="scroll"><table><tr><th>日付</th><th>売買</th><th>銘柄</th><th>株数</th><th>単価</th><th>状態</th></tr>{trade_rows}</table></div></section>
