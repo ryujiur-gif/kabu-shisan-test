@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-13",
+  "asof": "2026-11-16",
   "lot": 100,
   "scenarios": [
     {
@@ -12,26 +12,26 @@
       "net": 1000000,
       "net_ret": 0.0,
       "cash_ratio": 1.0,
-      "n_orders": 8,
+      "n_orders": 9,
       "n_bought": 0,
-      "n_short": 8,
+      "n_short": 9,
       "holdings": [],
       "last_day_chg": 0.0,
-      "asof": "2026-11-13"
+      "asof": "2026-11-16"
     },
     {
       "name": "300万円",
       "start": 3000000,
-      "total": 3007600,
-      "ret": 0.25,
+      "total": 3003600,
+      "ret": 0.12,
       "fees": 572,
-      "tax": 1427,
-      "net": 3005601,
-      "net_ret": 0.19,
-      "cash_ratio": 0.849,
-      "n_orders": 8,
+      "tax": 615,
+      "net": 3002413,
+      "net_ret": 0.08,
+      "cash_ratio": 0.85,
+      "n_orders": 9,
       "n_bought": 2,
-      "n_short": 6,
+      "n_short": 7,
       "holdings": [
         {
           "code": "3402",
@@ -44,22 +44,22 @@
           "shares": 100
         }
       ],
-      "last_day_chg": -0.05,
-      "asof": "2026-11-13"
+      "last_day_chg": -0.13,
+      "asof": "2026-11-16"
     },
     {
       "name": "500万円",
       "start": 5000000,
-      "total": 5021400,
-      "ret": 0.43,
+      "total": 5016200,
+      "ret": 0.32,
       "fees": 1122,
-      "tax": 4119,
-      "net": 5016159,
-      "net_ret": 0.32,
-      "cash_ratio": 0.802,
-      "n_orders": 8,
+      "tax": 3063,
+      "net": 5012015,
+      "net_ret": 0.24,
+      "cash_ratio": 0.803,
+      "n_orders": 9,
       "n_bought": 3,
-      "n_short": 5,
+      "n_short": 6,
       "holdings": [
         {
           "code": "1803",
@@ -77,21 +77,21 @@
           "shares": 200
         }
       ],
-      "last_day_chg": -0.05,
-      "asof": "2026-11-13"
+      "last_day_chg": -0.1,
+      "asof": "2026-11-16"
     },
     {
       "name": "1,000万円",
       "start": 10000000,
-      "total": 10107450,
-      "ret": 1.07,
-      "fees": 2486,
-      "tax": 21323,
-      "net": 10083641,
-      "net_ret": 0.84,
-      "cash_ratio": 0.675,
-      "n_orders": 8,
-      "n_bought": 5,
+      "total": 10091550,
+      "ret": 0.92,
+      "fees": 3168,
+      "tax": 17954,
+      "net": 10070428,
+      "net_ret": 0.7,
+      "cash_ratio": 0.593,
+      "n_orders": 9,
+      "n_bought": 6,
       "n_short": 3,
       "holdings": [
         {
@@ -118,13 +118,18 @@
           "code": "8309",
           "name": "三井住友トラストグループ",
           "shares": 500
+        },
+        {
+          "code": "8411",
+          "name": "みずほフィナンシャルグループ",
+          "shares": 100
         }
       ],
-      "last_day_chg": 0.09,
-      "asof": "2026-11-13"
+      "last_day_chg": -0.16,
+      "asof": "2026-11-16"
     }
   ],
-  "main_ret": 1.16,
-  "bench_ret": 5.49,
-  "main_asof": "2026-11-13"
+  "main_ret": 0.32,
+  "bench_ret": 2.94,
+  "main_asof": "2026-11-16"
 }
