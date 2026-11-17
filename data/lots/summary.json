@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-16",
+  "asof": "2026-11-17",
   "lot": 100,
   "scenarios": [
     {
@@ -17,18 +17,18 @@
       "n_short": 9,
       "holdings": [],
       "last_day_chg": 0.0,
-      "asof": "2026-11-16"
+      "asof": "2026-11-17"
     },
     {
       "name": "300万円",
       "start": 3000000,
-      "total": 3003600,
-      "ret": 0.12,
+      "total": 2989150,
+      "ret": -0.36,
       "fees": 572,
-      "tax": 615,
-      "net": 3002413,
-      "net_ret": 0.08,
-      "cash_ratio": 0.85,
+      "tax": 0,
+      "net": 2988578,
+      "net_ret": -0.38,
+      "cash_ratio": 0.854,
       "n_orders": 9,
       "n_bought": 2,
       "n_short": 7,
@@ -44,19 +44,19 @@
           "shares": 100
         }
       ],
-      "last_day_chg": -0.13,
-      "asof": "2026-11-16"
+      "last_day_chg": -0.48,
+      "asof": "2026-11-17"
     },
     {
       "name": "500万円",
       "start": 5000000,
-      "total": 5016200,
-      "ret": 0.32,
+      "total": 4984700,
+      "ret": -0.31,
       "fees": 1122,
-      "tax": 3063,
-      "net": 5012015,
-      "net_ret": 0.24,
-      "cash_ratio": 0.803,
+      "tax": 0,
+      "net": 4983578,
+      "net_ret": -0.33,
+      "cash_ratio": 0.808,
       "n_orders": 9,
       "n_bought": 3,
       "n_short": 6,
@@ -77,19 +77,19 @@
           "shares": 200
         }
       ],
-      "last_day_chg": -0.1,
-      "asof": "2026-11-16"
+      "last_day_chg": -0.63,
+      "asof": "2026-11-17"
     },
     {
       "name": "1,000万円",
       "start": 10000000,
-      "total": 10091550,
-      "ret": 0.92,
-      "fees": 3168,
-      "tax": 17954,
-      "net": 10070428,
-      "net_ret": 0.7,
-      "cash_ratio": 0.593,
+      "total": 9977900,
+      "ret": -0.22,
+      "fees": 3322,
+      "tax": 0,
+      "net": 9974578,
+      "net_ret": -0.25,
+      "cash_ratio": 0.653,
       "n_orders": 9,
       "n_bought": 6,
       "n_short": 3,
@@ -97,11 +97,6 @@
         {
           "code": "9022",
           "name": "東海旅客鉄道",
-          "shares": 100
-        },
-        {
-          "code": "8725",
-          "name": "ＭＳ＆ＡＤインシュアランスグループホールディングス",
           "shares": 100
         },
         {
@@ -125,11 +120,11 @@
           "shares": 100
         }
       ],
-      "last_day_chg": -0.16,
-      "asof": "2026-11-16"
+      "last_day_chg": -1.13,
+      "asof": "2026-11-17"
     }
   ],
-  "main_ret": 0.32,
-  "bench_ret": 2.94,
-  "main_asof": "2026-11-16"
+  "main_ret": -1.57,
+  "bench_ret": 1.55,
+  "main_asof": "2026-11-17"
 }
