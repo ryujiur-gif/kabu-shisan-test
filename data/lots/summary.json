@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-17",
+  "asof": "2026-11-18",
   "lot": 100,
   "scenarios": [
     {
@@ -17,18 +17,18 @@
       "n_short": 9,
       "holdings": [],
       "last_day_chg": 0.0,
-      "asof": "2026-11-17"
+      "asof": "2026-11-18"
     },
     {
       "name": "300万円",
       "start": 3000000,
-      "total": 2989150,
-      "ret": -0.36,
-      "fees": 572,
+      "total": 2990350,
+      "ret": -0.32,
+      "fees": 583,
       "tax": 0,
-      "net": 2988578,
-      "net_ret": -0.38,
-      "cash_ratio": 0.854,
+      "net": 2989767,
+      "net_ret": -0.34,
+      "cash_ratio": 0.899,
       "n_orders": 9,
       "n_bought": 2,
       "n_short": 7,
@@ -36,7 +36,7 @@
         {
           "code": "3402",
           "name": "東レ",
-          "shares": 200
+          "shares": 100
         },
         {
           "code": "8309",
@@ -44,19 +44,19 @@
           "shares": 100
         }
       ],
-      "last_day_chg": -0.48,
-      "asof": "2026-11-17"
+      "last_day_chg": 0.04,
+      "asof": "2026-11-18"
     },
     {
       "name": "500万円",
       "start": 5000000,
-      "total": 4984700,
-      "ret": -0.31,
-      "fees": 1122,
+      "total": 4980150,
+      "ret": -0.4,
+      "fees": 1221,
       "tax": 0,
-      "net": 4983578,
-      "net_ret": -0.33,
-      "cash_ratio": 0.808,
+      "net": 4978929,
+      "net_ret": -0.42,
+      "cash_ratio": 0.836,
       "n_orders": 9,
       "n_bought": 3,
       "n_short": 6,
@@ -69,7 +69,7 @@
         {
           "code": "3402",
           "name": "東レ",
-          "shares": 300
+          "shares": 200
         },
         {
           "code": "8309",
@@ -77,19 +77,19 @@
           "shares": 200
         }
       ],
-      "last_day_chg": -0.63,
-      "asof": "2026-11-17"
+      "last_day_chg": -0.09,
+      "asof": "2026-11-18"
     },
     {
       "name": "1,000万円",
       "start": 10000000,
-      "total": 9977900,
-      "ret": -0.22,
-      "fees": 3322,
+      "total": 9957400,
+      "ret": -0.43,
+      "fees": 3509,
       "tax": 0,
-      "net": 9974578,
-      "net_ret": -0.25,
-      "cash_ratio": 0.653,
+      "net": 9953891,
+      "net_ret": -0.46,
+      "cash_ratio": 0.695,
       "n_orders": 9,
       "n_bought": 6,
       "n_short": 3,
@@ -107,7 +107,7 @@
         {
           "code": "3402",
           "name": "東レ",
-          "shares": 700
+          "shares": 400
         },
         {
           "code": "8309",
@@ -120,11 +120,11 @@
           "shares": 100
         }
       ],
-      "last_day_chg": -1.13,
-      "asof": "2026-11-17"
+      "last_day_chg": -0.21,
+      "asof": "2026-11-18"
     }
   ],
-  "main_ret": -1.57,
-  "bench_ret": 1.55,
-  "main_asof": "2026-11-17"
+  "main_ret": -2.02,
+  "bench_ret": 1.84,
+  "main_asof": "2026-11-18"
 }
