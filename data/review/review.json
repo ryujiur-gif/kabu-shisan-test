@@ -1,26 +1,26 @@
 {
- "today": "2026-11-19",
- "asof": "2026-11-18",
+ "today": "2026-11-20",
+ "asof": "2026-11-19",
  "portfolio": {
-  "asof": "2026-11-18",
-  "days": 8,
-  "mine": -2.02,
-  "bench": 1.84,
-  "diff": -3.85,
-  "cash_part": -3.24,
-  "selection_part": -0.7,
+  "asof": "2026-11-19",
+  "days": 9,
+  "mine": -2.3,
+  "bench": 2.56,
+  "diff": -4.86,
+  "cash_part": -3.59,
+  "selection_part": -1.34,
   "avg_cash_ratio": 60,
-  "days_cash_over": 4
+  "days_cash_over": 5
  },
  "overall": {
-  "n": 6,
-  "win": 50,
-  "beat": 67,
-  "avg_ret": 0.02,
-  "avg_x": -0.74
+  "n": 8,
+  "win": 38,
+  "beat": 50,
+  "avg_ret": -1.83,
+  "avg_x": -1.67
  },
  "n_buys": 9,
- "n_pending": 3,
+ "n_pending": 1,
  "buys": [
   {
    "date": "2026-11-09",
@@ -47,10 +47,10 @@
    "vol_ratio": 1.52,
    "cross": null,
    "gap_open": 1.13,
-   "days": 8,
-   "latest": 5.5,
-   "asof": "2026-11-18",
-   "latest_x": 3.66,
+   "days": 9,
+   "latest": 5.71,
+   "asof": "2026-11-19",
+   "latest_x": 3.15,
    "sell_date": null,
    "r1": 3.11,
    "x1": 1.7,
@@ -91,10 +91,10 @@
    "vol_ratio": 1.14,
    "cross": null,
    "gap_open": 0.81,
-   "days": 8,
-   "latest": 3.84,
-   "asof": "2026-11-18",
-   "latest_x": 2.0,
+   "days": 9,
+   "latest": 1.83,
+   "asof": "2026-11-19",
+   "latest_x": -0.73,
    "sell_date": null,
    "r1": 2.76,
    "x1": 1.35,
@@ -137,10 +137,10 @@
    "vol_ratio": 1.15,
    "cross": null,
    "gap_open": 4.71,
-   "days": 7,
-   "latest": -9.32,
-   "asof": "2026-11-18",
-   "latest_x": -8.73,
+   "days": 8,
+   "latest": -8.93,
+   "asof": "2026-11-19",
+   "latest_x": -9.05,
    "sell_date": "2026-11-17",
    "r1": -2.83,
    "x1": -4.66,
@@ -183,10 +183,10 @@
    "vol_ratio": 3.51,
    "cross": "GC",
    "gap_open": 1.61,
-   "days": 7,
-   "latest": -0.26,
-   "asof": "2026-11-18",
-   "latest_x": 0.33,
+   "days": 8,
+   "latest": -0.23,
+   "asof": "2026-11-19",
+   "latest_x": -0.35,
    "sell_date": null,
    "r1": 0.7,
    "x1": -1.13,
@@ -229,10 +229,10 @@
    "vol_ratio": 3.05,
    "cross": "GC",
    "gap_open": 2.27,
-   "days": 6,
-   "latest": -1.81,
-   "asof": "2026-11-18",
-   "latest_x": 0.67,
+   "days": 7,
+   "latest": -0.07,
+   "asof": "2026-11-19",
+   "latest_x": 1.72,
    "sell_date": null,
    "r1": 3.07,
    "x1": 1.87,
@@ -272,11 +272,11 @@
    "vol_ratio": 2.93,
    "cross": null,
    "gap_open": 1.13,
-   "days": 5,
-   "latest": -6.88,
-   "asof": "2026-11-18",
-   "latest_x": -2.89,
-   "sell_date": null,
+   "days": 6,
+   "latest": -7.29,
+   "asof": "2026-11-19",
+   "latest_x": -3.99,
+   "sell_date": "2026-11-19",
    "r1": 2.4,
    "x1": 3.47,
    "r3": -0.54,
@@ -287,9 +287,12 @@
    "x10": null,
    "r20": null,
    "x20": null,
-   "ret": -6.88,
-   "x": -2.89,
-   "basis": "5日後",
+   "sell_price": 11100.0,
+   "realized": -8.0,
+   "realized_x": -4.01,
+   "ret": -8.0,
+   "x": -4.01,
+   "basis": "売却",
    "verdict": "失敗"
   },
   {
@@ -316,25 +319,25 @@
    "vol_ratio": 0.72,
    "cross": null,
    "gap_open": 4.74,
-   "days": 4,
-   "latest": -4.07,
-   "asof": "2026-11-18",
-   "latest_x": -0.48,
+   "days": 5,
+   "latest": -3.02,
+   "asof": "2026-11-19",
+   "latest_x": -0.11,
    "sell_date": null,
    "r1": 0.96,
    "x1": 1.09,
    "r3": -3.25,
    "x3": 0.61,
-   "r5": null,
-   "x5": null,
+   "r5": -3.02,
+   "x5": -0.11,
    "r10": null,
    "x10": null,
    "r20": null,
    "x20": null,
-   "ret": null,
-   "x": null,
-   "basis": "評価中",
-   "verdict": "評価中"
+   "ret": -3.02,
+   "x": -0.11,
+   "basis": "5日後",
+   "verdict": "失敗"
   },
   {
    "date": "2026-11-13",
@@ -362,25 +365,25 @@
    "vol_ratio": 4.2,
    "cross": null,
    "gap_open": -1.74,
-   "days": 4,
-   "latest": -7.55,
-   "asof": "2026-11-18",
-   "latest_x": -3.96,
+   "days": 5,
+   "latest": -10.6,
+   "asof": "2026-11-19",
+   "latest_x": -7.69,
    "sell_date": null,
    "r1": -0.9,
    "x1": -0.77,
    "r3": -6.07,
    "x3": -2.21,
-   "r5": null,
-   "x5": null,
+   "r5": -10.6,
+   "x5": -7.69,
    "r10": null,
    "x10": null,
    "r20": null,
    "x20": null,
-   "ret": null,
-   "x": null,
-   "basis": "評価中",
-   "verdict": "評価中"
+   "ret": -10.6,
+   "x": -7.69,
+   "basis": "5日後",
+   "verdict": "失敗"
   },
   {
    "date": "2026-11-16",
@@ -407,10 +410,10 @@
    "vol_ratio": 0.72,
    "cross": "GC",
    "gap_open": 4.36,
-   "days": 3,
-   "latest": -6.49,
-   "asof": "2026-11-18",
-   "latest_x": -2.7,
+   "days": 4,
+   "latest": -8.48,
+   "asof": "2026-11-19",
+   "latest_x": -5.38,
    "sell_date": null,
    "r1": -1.52,
    "x1": 1.23,
@@ -442,7 +445,7 @@
    "realized_yen": -3960,
    "after5": null,
    "after5_x": null,
-   "after_latest": -0.67,
+   "after_latest": -0.24,
    "judge": "評価中"
   },
   {
@@ -458,7 +461,7 @@
    "realized_yen": 1770,
    "after5": null,
    "after5_x": null,
-   "after_latest": -3.06,
+   "after_latest": -4.94,
    "judge": "評価中"
   },
   {
@@ -474,55 +477,44 @@
    "realized_yen": 0,
    "after5": null,
    "after5_x": null,
-   "after_latest": -1.81,
+   "after_latest": -0.07,
+   "judge": "評価中"
+  },
+  {
+   "date": "2026-11-19",
+   "code": "1801",
+   "name": "大成建設",
+   "price": 11100.0,
+   "shares": 8,
+   "reason": "下落予想：取得から-6.88%、11/16〜18に3日続落（-3.69%・-4.92%・-1.53%）し、25日線乖離-1.47%と25日線を割り込みRSI48、5日-5.83%。ゼネコン4社の上方修正は出そろって材料は織り込まれ（ニュースイッチ11/18）、11/17は建設株が軒並み安（Yahoo!ファイナンス11/17）、リニア談合による民間土木の営業停止（11/7〜2027/3/6、日経10/23）も続き反発のきっかけが見当たらない。損切り水準（11,100円前後）まで1.2%しかなく、購入から6営業日目で売れるため全株売る。",
+   "bought": "2026-11-12",
+   "avg_cost": 12065.0,
+   "realized": -8.0,
+   "realized_yen": -7720,
+   "after5": null,
+   "after5_x": null,
+   "after_latest": 0.77,
    "judge": "評価中"
   }
  ],
  "outlook_stats": {
   "上昇": {
-   "n": 3,
+   "n": 6,
    "hit": 33,
-   "avg_r5": -1.77
+   "avg_r5": -3.02
   },
   "横ばい": {
-   "n": 8,
-   "hit": 25,
-   "avg_r5": 0.57
+   "n": 11,
+   "hit": 18,
+   "avg_r5": -0.9
   },
   "全体": {
-   "n": 11,
-   "hit": 27,
-   "avg_r5": -0.06
+   "n": 17,
+   "hit": 24,
+   "avg_r5": -1.64
   }
  },
  "outlook_misses": [
-  {
-   "date": "2026-11-10",
-   "code": "9022",
-   "name": "東海旅客鉄道",
-   "outlook": "横ばい",
-   "r1": -0.69,
-   "r5": 4.64,
-   "hit": false
-  },
-  {
-   "date": "2026-11-10",
-   "code": "8725",
-   "name": "ＭＳ＆ＡＤインシュアランスグループホールディングス",
-   "outlook": "横ばい",
-   "r1": 0.82,
-   "r5": 4.35,
-   "hit": false
-  },
-  {
-   "date": "2026-11-11",
-   "code": "9022",
-   "name": "東海旅客鉄道",
-   "outlook": "横ばい",
-   "r1": -1.0,
-   "r5": 4.98,
-   "hit": false
-  },
   {
    "date": "2026-11-11",
    "code": "6503",
@@ -567,6 +559,51 @@
    "r1": 0.25,
    "r5": -4.74,
    "hit": false
+  },
+  {
+   "date": "2026-11-13",
+   "code": "8725",
+   "name": "ＭＳ＆ＡＤインシュアランスグループホールディングス",
+   "outlook": "横ばい",
+   "r1": 1.1,
+   "r5": -3.75,
+   "hit": false
+  },
+  {
+   "date": "2026-11-13",
+   "code": "6503",
+   "name": "三菱電機",
+   "outlook": "横ばい",
+   "r1": -4.29,
+   "r5": -7.41,
+   "hit": false
+  },
+  {
+   "date": "2026-11-13",
+   "code": "1803",
+   "name": "清水建設",
+   "outlook": "上昇",
+   "r1": -0.6,
+   "r5": -4.89,
+   "hit": false
+  },
+  {
+   "date": "2026-11-13",
+   "code": "3402",
+   "name": "東レ",
+   "outlook": "横ばい",
+   "r1": -1.11,
+   "r5": -3.3,
+   "hit": false
+  },
+  {
+   "date": "2026-11-13",
+   "code": "1801",
+   "name": "大成建設",
+   "outlook": "上昇",
+   "r1": 0.85,
+   "r5": -9.47,
+   "hit": false
   }
  ],
  "groups": {
@@ -574,22 +611,22 @@
    "label": "期待度",
    "buckets": {
     "期待度 低": {
-     "n": 4,
-     "win": 75,
-     "beat": 75,
-     "avg_ret": 2.23,
-     "avg_x": -0.61,
-     "rest_n": 2,
-     "rest_avg": -1.02
+     "n": 5,
+     "win": 60,
+     "beat": 60,
+     "avg_ret": -0.34,
+     "avg_x": -2.02,
+     "rest_n": 3,
+     "rest_avg": -1.09
     },
     "期待度 中": {
-     "n": 2,
+     "n": 3,
      "win": 0,
-     "beat": 50,
-     "avg_ret": -4.38,
-     "avg_x": -1.02,
-     "rest_n": 4,
-     "rest_avg": -0.61
+     "beat": 33,
+     "avg_ret": -4.3,
+     "avg_x": -1.09,
+     "rest_n": 5,
+     "rest_avg": -2.02
     }
    }
   },
@@ -602,15 +639,15 @@
      "beat": 100,
      "avg_ret": 6.02,
      "avg_x": 0.53,
-     "rest_n": 5,
-     "rest_avg": -1.0
+     "rest_n": 7,
+     "rest_avg": -1.99
     },
     "②景気敏感型": {
-     "n": 5,
-     "win": 40,
-     "beat": 60,
-     "avg_ret": -1.18,
-     "avg_x": -1.0,
+     "n": 7,
+     "win": 29,
+     "beat": 43,
+     "avg_ret": -2.95,
+     "avg_x": -1.99,
      "rest_n": 1,
      "rest_avg": 0.53
     }
@@ -625,26 +662,26 @@
      "beat": 100,
      "avg_ret": 6.49,
      "avg_x": 1.0,
-     "rest_n": 4,
-     "rest_avg": -1.61
+     "rest_n": 6,
+     "rest_avg": -2.56
     },
     "リスクオン（強気）": {
      "n": 3,
      "win": 33,
      "beat": 33,
-     "avg_ret": -3.65,
-     "avg_x": -2.44,
-     "rest_n": 3,
-     "rest_avg": 0.95
+     "avg_ret": -4.02,
+     "avg_x": -2.81,
+     "rest_n": 5,
+     "rest_avg": -0.99
     },
     "中立": {
-     "n": 1,
+     "n": 3,
      "win": 0,
-     "beat": 100,
-     "avg_ret": -1.89,
-     "avg_x": 0.86,
+     "beat": 33,
+     "avg_ret": -5.17,
+     "avg_x": -2.31,
      "rest_n": 5,
-     "rest_avg": -1.06
+     "rest_avg": -1.29
     }
    }
   },
@@ -652,11 +689,11 @@
    "label": "重要イベント",
    "buckets": {
     "重要イベントなし": {
-     "n": 2,
+     "n": 4,
      "win": 0,
-     "beat": 50,
-     "avg_ret": -4.38,
-     "avg_x": -1.02,
+     "beat": 25,
+     "avg_ret": -5.88,
+     "avg_x": -2.74,
      "rest_n": 4,
      "rest_avg": -0.61
     }
@@ -666,31 +703,31 @@
    "label": "前日の値動き",
    "buckets": {
     "前日マイナス（押し目）": {
-     "n": 2,
-     "win": 100,
-     "beat": 100,
-     "avg_ret": 6.49,
-     "avg_x": 1.0,
-     "rest_n": 4,
-     "rest_avg": -1.61
+     "n": 3,
+     "win": 67,
+     "beat": 67,
+     "avg_ret": 3.32,
+     "avg_x": 0.63,
+     "rest_n": 5,
+     "rest_avg": -3.05
     },
     "前日+5%以上の急騰後": {
-     "n": 3,
-     "win": 33,
-     "beat": 67,
-     "avg_ret": -1.99,
-     "avg_x": -1.19,
-     "rest_n": 3,
-     "rest_avg": -0.3
+     "n": 4,
+     "win": 25,
+     "beat": 50,
+     "avg_ret": -4.14,
+     "avg_x": -2.81,
+     "rest_n": 4,
+     "rest_avg": -0.53
     },
     "前日プラス（+5%未満）": {
      "n": 1,
      "win": 0,
      "beat": 0,
-     "avg_ret": -6.88,
-     "avg_x": -2.89,
-     "rest_n": 5,
-     "rest_avg": -0.31
+     "avg_ret": -8.0,
+     "avg_x": -4.01,
+     "rest_n": 7,
+     "rest_avg": -1.34
     }
    }
   },
@@ -698,22 +735,22 @@
    "label": "寄り付きの位置",
    "buckets": {
     "通常の寄り付き": {
-     "n": 4,
-     "win": 75,
-     "beat": 75,
-     "avg_ret": 2.68,
-     "avg_x": 0.82,
-     "rest_n": 2,
-     "rest_avg": -3.86
+     "n": 5,
+     "win": 60,
+     "beat": 60,
+     "avg_ret": -0.2,
+     "avg_x": -1.11,
+     "rest_n": 3,
+     "rest_avg": -2.61
     },
     "高寄り（始値が前日終値+2%以上）": {
-     "n": 2,
+     "n": 3,
      "win": 0,
-     "beat": 50,
-     "avg_ret": -5.3,
-     "avg_x": -3.86,
-     "rest_n": 4,
-     "rest_avg": 0.82
+     "beat": 33,
+     "avg_ret": -4.54,
+     "avg_x": -2.61,
+     "rest_n": 5,
+     "rest_avg": -1.11
     }
    }
   },
@@ -721,11 +758,11 @@
    "label": "RSI",
    "buckets": {
     "RSI50〜70": {
-     "n": 4,
-     "win": 50,
-     "beat": 75,
-     "avg_ret": 0.47,
-     "avg_x": 0.66,
+     "n": 6,
+     "win": 33,
+     "beat": 50,
+     "avg_ret": -2.14,
+     "avg_x": -1.04,
      "rest_n": 2,
      "rest_avg": -3.56
     },
@@ -735,8 +772,8 @@
      "beat": 50,
      "avg_ret": -0.88,
      "avg_x": -3.56,
-     "rest_n": 4,
-     "rest_avg": 0.66
+     "rest_n": 6,
+     "rest_avg": -1.04
     }
    }
   },
@@ -744,11 +781,11 @@
    "label": "25日線乖離",
    "buckets": {
     "25日線の上（+10%未満）": {
-     "n": 4,
-     "win": 50,
-     "beat": 75,
-     "avg_ret": 0.47,
-     "avg_x": 0.66,
+     "n": 6,
+     "win": 33,
+     "beat": 50,
+     "avg_ret": -2.14,
+     "avg_x": -1.04,
      "rest_n": 2,
      "rest_avg": -3.56
     },
@@ -758,8 +795,8 @@
      "beat": 50,
      "avg_ret": -0.88,
      "avg_x": -3.56,
-     "rest_n": 4,
-     "rest_avg": 0.66
+     "rest_n": 6,
+     "rest_avg": -1.04
     }
    }
   },
@@ -767,22 +804,22 @@
    "label": "出来高",
    "buckets": {
     "出来高ふつう": {
-     "n": 3,
-     "win": 67,
-     "beat": 67,
-     "avg_ret": 1.42,
-     "avg_x": -2.19,
-     "rest_n": 3,
-     "rest_avg": 0.71
+     "n": 4,
+     "win": 50,
+     "beat": 50,
+     "avg_ret": 0.31,
+     "avg_x": -1.67,
+     "rest_n": 4,
+     "rest_avg": -1.67
     },
     "出来高2倍以上": {
-     "n": 3,
-     "win": 33,
-     "beat": 67,
-     "avg_ret": -1.38,
-     "avg_x": 0.71,
-     "rest_n": 3,
-     "rest_avg": -2.19
+     "n": 4,
+     "win": 25,
+     "beat": 50,
+     "avg_ret": -3.96,
+     "avg_x": -1.67,
+     "rest_n": 4,
+     "rest_avg": -1.67
     }
    }
   },
@@ -790,22 +827,22 @@
    "label": "材料",
    "buckets": {
     "材料：増配": {
-     "n": 2,
-     "win": 100,
-     "beat": 100,
-     "avg_ret": 6.49,
-     "avg_x": 1.0,
-     "rest_n": 4,
-     "rest_avg": -1.61
+     "n": 3,
+     "win": 67,
+     "beat": 67,
+     "avg_ret": 0.79,
+     "avg_x": -1.9,
+     "rest_n": 5,
+     "rest_avg": -1.54
     },
     "材料：割安": {
-     "n": 3,
-     "win": 33,
-     "beat": 67,
-     "avg_ret": -1.53,
-     "avg_x": -2.4,
+     "n": 5,
+     "win": 20,
+     "beat": 40,
+     "avg_ret": -3.64,
+     "avg_x": -3.0,
      "rest_n": 3,
-     "rest_avg": 0.91
+     "rest_avg": 0.54
     },
     "材料：国策・テーマ": {
      "n": 2,
@@ -813,24 +850,24 @@
      "beat": 100,
      "avg_ret": 2.06,
      "avg_x": 0.7,
-     "rest_n": 4,
-     "rest_avg": -1.46
+     "rest_n": 6,
+     "rest_avg": -2.46
     },
     "材料：自社株買い": {
-     "n": 3,
-     "win": 33,
-     "beat": 67,
-     "avg_ret": -1.21,
-     "avg_x": -2.08,
-     "rest_n": 3,
-     "rest_avg": 0.6
-    },
-    "材料：上方修正": {
      "n": 4,
      "win": 25,
      "beat": 50,
-     "avg_ret": -3.21,
-     "avg_x": -1.61,
+     "avg_ret": -3.56,
+     "avg_x": -3.49,
+     "rest_n": 4,
+     "rest_avg": 0.14
+    },
+    "材料：上方修正": {
+     "n": 6,
+     "win": 17,
+     "beat": 33,
+     "avg_ret": -4.6,
+     "avg_x": -2.56,
      "rest_n": 2,
      "rest_avg": 1.0
     },
@@ -840,8 +877,8 @@
      "beat": 0,
      "avg_ret": -8.71,
      "avg_x": -8.58,
-     "rest_n": 5,
-     "rest_avg": 0.82
+     "rest_n": 7,
+     "rest_avg": -0.69
     }
    }
   },
@@ -854,8 +891,8 @@
      "beat": 100,
      "avg_ret": 6.02,
      "avg_x": 0.53,
-     "rest_n": 5,
-     "rest_avg": -1.0
+     "rest_n": 7,
+     "rest_avg": -1.99
     },
     "保険": {
      "n": 1,
@@ -863,8 +900,8 @@
      "beat": 100,
      "avg_ret": 6.96,
      "avg_x": 1.47,
-     "rest_n": 5,
-     "rest_avg": -1.19
+     "rest_n": 7,
+     "rest_avg": -2.12
     },
     "電気機器": {
      "n": 1,
@@ -872,17 +909,17 @@
      "beat": 0,
      "avg_ret": -8.71,
      "avg_x": -8.58,
-     "rest_n": 5,
-     "rest_avg": 0.82
+     "rest_n": 7,
+     "rest_avg": -0.69
     },
     "建設": {
      "n": 2,
      "win": 50,
      "beat": 50,
-     "avg_ret": -1.12,
-     "avg_x": 0.63,
-     "rest_n": 4,
-     "rest_avg": -1.43
+     "avg_ret": -1.68,
+     "avg_x": 0.07,
+     "rest_n": 6,
+     "rest_avg": -2.25
     },
     "繊維": {
      "n": 1,
@@ -890,8 +927,26 @@
      "beat": 100,
      "avg_ret": -1.89,
      "avg_x": 0.86,
-     "rest_n": 5,
-     "rest_avg": -1.06
+     "rest_n": 7,
+     "rest_avg": -2.03
+    },
+    "銀行": {
+     "n": 1,
+     "win": 0,
+     "beat": 0,
+     "avg_ret": -3.02,
+     "avg_x": -0.11,
+     "rest_n": 7,
+     "rest_avg": -1.9
+    },
+    "非鉄・金属": {
+     "n": 1,
+     "win": 0,
+     "beat": 0,
+     "avg_ret": -10.6,
+     "avg_x": -7.69,
+     "rest_n": 7,
+     "rest_avg": -0.81
     }
    }
   }
@@ -902,11 +957,11 @@
    "bucket": "②景気敏感型",
    "kind": "弱み",
    "level": "傾向",
-   "n": 5,
-   "win": 40,
-   "beat": 60,
-   "avg_ret": -1.18,
-   "avg_x": -1.0,
+   "n": 7,
+   "win": 29,
+   "beat": 43,
+   "avg_ret": -2.95,
+   "avg_x": -1.99,
    "rest_n": 1,
    "rest_avg": 0.53,
    "advice": "この条件の買いは見送るか、期待度を1段下げる"
@@ -915,15 +970,71 @@
    "gid": "tag",
    "bucket": "材料：上方修正",
    "kind": "弱み",
+   "level": "傾向",
+   "n": 6,
+   "win": 17,
+   "beat": 33,
+   "avg_ret": -4.6,
+   "avg_x": -2.56,
+   "rest_n": 2,
+   "rest_avg": 1.0,
+   "advice": "上方修正の発表翌日は織り込みが早い。発表当日の上昇率が大きいときは押し目を待つ"
+  },
+  {
+   "gid": "tag",
+   "bucket": "材料：割安",
+   "kind": "弱み",
+   "level": "傾向",
+   "n": 5,
+   "win": 20,
+   "beat": 40,
+   "avg_ret": -3.64,
+   "avg_x": -3.0,
+   "rest_n": 3,
+   "rest_avg": 0.54,
+   "advice": "割安さだけを理由にしない（株価が動くきっかけになる材料があるものに絞る）"
+  },
+  {
+   "gid": "event",
+   "bucket": "重要イベントなし",
+   "kind": "弱み",
+   "level": "仮説",
+   "n": 4,
+   "win": 0,
+   "beat": 25,
+   "avg_ret": -5.88,
+   "avg_x": -2.74,
+   "rest_n": 4,
+   "rest_avg": -0.61,
+   "advice": "この条件の買いは見送るか、期待度を1段下げる"
+  },
+  {
+   "gid": "chg1d",
+   "bucket": "前日+5%以上の急騰後",
+   "kind": "弱み",
    "level": "仮説",
    "n": 4,
    "win": 25,
    "beat": 50,
-   "avg_ret": -3.21,
-   "avg_x": -1.61,
-   "rest_n": 2,
-   "rest_avg": 1.0,
-   "advice": "上方修正の発表翌日は織り込みが早い。発表当日の上昇率が大きいときは押し目を待つ"
+   "avg_ret": -4.14,
+   "avg_x": -2.81,
+   "rest_n": 4,
+   "rest_avg": -0.53,
+   "advice": "急騰の翌朝は寄り付きが高くなりやすい。翌朝すぐには買わず、1〜2日待って押したところで買うか、期待度を1段下げる"
+  },
+  {
+   "gid": "tag",
+   "bucket": "材料：自社株買い",
+   "kind": "弱み",
+   "level": "仮説",
+   "n": 4,
+   "win": 25,
+   "beat": 50,
+   "avg_ret": -3.56,
+   "avg_x": -3.49,
+   "rest_n": 4,
+   "rest_avg": 0.14,
+   "advice": "この条件の買いは見送るか、期待度を1段下げる"
   },
   {
    "gid": "mood",
@@ -933,52 +1044,24 @@
    "n": 3,
    "win": 33,
    "beat": 33,
-   "avg_ret": -3.65,
-   "avg_x": -2.44,
-   "rest_n": 3,
-   "rest_avg": 0.95,
+   "avg_ret": -4.02,
+   "avg_x": -2.81,
+   "rest_n": 5,
+   "rest_avg": -0.99,
    "advice": "この条件の買いは見送るか、期待度を1段下げる"
   },
   {
-   "gid": "vol",
-   "bucket": "出来高ふつう",
+   "gid": "mood",
+   "bucket": "中立",
    "kind": "弱み",
    "level": "仮説",
    "n": 3,
-   "win": 67,
-   "beat": 67,
-   "avg_ret": 1.42,
-   "avg_x": -2.19,
-   "rest_n": 3,
-   "rest_avg": 0.71,
-   "advice": "この条件の買いは見送るか、期待度を1段下げる"
-  },
-  {
-   "gid": "tag",
-   "bucket": "材料：割安",
-   "kind": "弱み",
-   "level": "仮説",
-   "n": 3,
-   "win": 33,
-   "beat": 67,
-   "avg_ret": -1.53,
-   "avg_x": -2.4,
-   "rest_n": 3,
-   "rest_avg": 0.91,
-   "advice": "割安さだけを理由にしない（株価が動くきっかけになる材料があるものに絞る）"
-  },
-  {
-   "gid": "tag",
-   "bucket": "材料：自社株買い",
-   "kind": "弱み",
-   "level": "仮説",
-   "n": 3,
-   "win": 33,
-   "beat": 67,
-   "avg_ret": -1.21,
-   "avg_x": -2.08,
-   "rest_n": 3,
-   "rest_avg": 0.6,
+   "win": 0,
+   "beat": 33,
+   "avg_ret": -5.17,
+   "avg_x": -2.31,
+   "rest_n": 5,
+   "rest_avg": -1.29,
    "advice": "この条件の買いは見送るか、期待度を1段下げる"
   },
   {
@@ -986,13 +1069,13 @@
    "bucket": "高寄り（始値が前日終値+2%以上）",
    "kind": "弱み",
    "level": "仮説",
-   "n": 2,
+   "n": 3,
    "win": 0,
-   "beat": 50,
-   "avg_ret": -5.3,
-   "avg_x": -3.86,
-   "rest_n": 4,
-   "rest_avg": 0.82,
+   "beat": 33,
+   "avg_ret": -4.54,
+   "avg_x": -2.61,
+   "rest_n": 5,
+   "rest_avg": -1.11,
    "advice": "先物との差（寄り付きの目安）が+2%以上の日は高値づかみになりやすい。買いを1銘柄・期待度「低」までにするか翌日に回す"
   },
   {
@@ -1005,8 +1088,8 @@
    "beat": 50,
    "avg_ret": -0.88,
    "avg_x": -3.56,
-   "rest_n": 4,
-   "rest_avg": 0.66,
+   "rest_n": 6,
+   "rest_avg": -1.04,
    "advice": "この条件の買いは見送るか、期待度を1段下げる"
   },
   {
@@ -1019,8 +1102,8 @@
    "beat": 50,
    "avg_ret": -0.88,
    "avg_x": -3.56,
-   "rest_n": 4,
-   "rest_avg": 0.66,
+   "rest_n": 6,
+   "rest_avg": -1.04,
    "advice": "25日線の下の銘柄は「反発の確認」（前日比プラス・出来高増）が取れてから買う"
   },
   {
@@ -1033,49 +1116,26 @@
    "beat": 100,
    "avg_ret": 6.49,
    "avg_x": 1.0,
-   "rest_n": 4,
-   "rest_avg": -1.61,
-   "advice": "この条件は続けてよい（件数が増えても成績が保たれるか確認する）"
-  },
-  {
-   "gid": "chg1d",
-   "bucket": "前日マイナス（押し目）",
-   "kind": "強み",
-   "level": "仮説",
-   "n": 2,
-   "win": 100,
-   "beat": 100,
-   "avg_ret": 6.49,
-   "avg_x": 1.0,
-   "rest_n": 4,
-   "rest_avg": -1.61,
-   "advice": "この条件は続けてよい（件数が増えても成績が保たれるか確認する）"
-  },
-  {
-   "gid": "tag",
-   "bucket": "材料：増配",
-   "kind": "強み",
-   "level": "仮説",
-   "n": 2,
-   "win": 100,
-   "beat": 100,
-   "avg_ret": 6.49,
-   "avg_x": 1.0,
-   "rest_n": 4,
-   "rest_avg": -1.61,
+   "rest_n": 6,
+   "rest_avg": -2.56,
    "advice": "この条件は続けてよい（件数が増えても成績が保たれるか確認する）"
   }
  ],
  "cases_due": [
   {
-   "key": "## 2026-11-12 買 1801",
-   "when": "2026-11-12",
-   "title": "大成建設（1801）2026-11-12 買い → 5営業日後 -6.88%（日経平均との差 -2.89%）：失敗"
+   "key": "## 2026-11-13 買 8309",
+   "when": "2026-11-13",
+   "title": "三井住友トラストグループ（8309）2026-11-13 買い → 5営業日後 -3.02%（日経平均との差 -0.11%）：失敗"
   },
   {
-   "key": "## 2026-11-18 売 3402",
-   "when": "2026-11-18",
-   "title": "東レ（3402）2026-11-11 買い → 2026-11-18 売り +0.00%（+0円）"
+   "key": "## 2026-11-13 買 5714",
+   "when": "2026-11-13",
+   "title": "ＤＯＷＡホールディングス（5714）2026-11-13 買い → 5営業日後 -10.60%（日経平均との差 -7.69%）：失敗"
+  },
+  {
+   "key": "## 2026-11-19 売 1801",
+   "when": "2026-11-19",
+   "title": "大成建設（1801）2026-11-12 買い → 2026-11-19 売り -8.00%（-7,720円）"
   }
  ]
 }

@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-18",
+  "asof": "2026-11-19",
   "lot": 100,
   "scenarios": [
     {
@@ -17,18 +17,18 @@
       "n_short": 9,
       "holdings": [],
       "last_day_chg": 0.0,
-      "asof": "2026-11-18"
+      "asof": "2026-11-19"
     },
     {
       "name": "300万円",
       "start": 3000000,
-      "total": 2990350,
-      "ret": -0.32,
+      "total": 2994550,
+      "ret": -0.18,
       "fees": 583,
       "tax": 0,
-      "net": 2989767,
-      "net_ret": -0.34,
-      "cash_ratio": 0.899,
+      "net": 2993967,
+      "net_ret": -0.2,
+      "cash_ratio": 0.898,
       "n_orders": 9,
       "n_bought": 2,
       "n_short": 7,
@@ -44,19 +44,19 @@
           "shares": 100
         }
       ],
-      "last_day_chg": 0.04,
-      "asof": "2026-11-18"
+      "last_day_chg": 0.14,
+      "asof": "2026-11-19"
     },
     {
       "name": "500万円",
       "start": 5000000,
-      "total": 4980150,
-      "ret": -0.4,
+      "total": 4988600,
+      "ret": -0.23,
       "fees": 1221,
       "tax": 0,
-      "net": 4978929,
-      "net_ret": -0.42,
-      "cash_ratio": 0.836,
+      "net": 4987379,
+      "net_ret": -0.25,
+      "cash_ratio": 0.834,
       "n_orders": 9,
       "n_bought": 3,
       "n_short": 6,
@@ -77,18 +77,18 @@
           "shares": 200
         }
       ],
-      "last_day_chg": -0.09,
-      "asof": "2026-11-18"
+      "last_day_chg": 0.17,
+      "asof": "2026-11-19"
     },
     {
       "name": "1,000万円",
       "start": 10000000,
-      "total": 9957400,
-      "ret": -0.43,
+      "total": 9960350,
+      "ret": -0.4,
       "fees": 3509,
       "tax": 0,
-      "net": 9953891,
-      "net_ret": -0.46,
+      "net": 9956841,
+      "net_ret": -0.43,
       "cash_ratio": 0.695,
       "n_orders": 9,
       "n_bought": 6,
@@ -120,11 +120,11 @@
           "shares": 100
         }
       ],
-      "last_day_chg": -0.21,
-      "asof": "2026-11-18"
+      "last_day_chg": 0.03,
+      "asof": "2026-11-19"
     }
   ],
-  "main_ret": -2.02,
-  "bench_ret": 1.84,
-  "main_asof": "2026-11-18"
+  "main_ret": -2.3,
+  "bench_ret": 2.56,
+  "main_asof": "2026-11-19"
 }
