@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-19",
+  "asof": "2026-11-20",
   "lot": 100,
   "scenarios": [
     {
@@ -17,18 +17,18 @@
       "n_short": 9,
       "holdings": [],
       "last_day_chg": 0.0,
-      "asof": "2026-11-19"
+      "asof": "2026-11-20"
     },
     {
       "name": "300万円",
       "start": 3000000,
-      "total": 2994550,
-      "ret": -0.18,
+      "total": 2982100,
+      "ret": -0.6,
       "fees": 583,
       "tax": 0,
-      "net": 2993967,
-      "net_ret": -0.2,
-      "cash_ratio": 0.898,
+      "net": 2981517,
+      "net_ret": -0.62,
+      "cash_ratio": 0.901,
       "n_orders": 9,
       "n_bought": 2,
       "n_short": 7,
@@ -44,19 +44,19 @@
           "shares": 100
         }
       ],
-      "last_day_chg": 0.14,
-      "asof": "2026-11-19"
+      "last_day_chg": -0.42,
+      "asof": "2026-11-20"
     },
     {
       "name": "500万円",
       "start": 5000000,
-      "total": 4988600,
-      "ret": -0.23,
+      "total": 4955350,
+      "ret": -0.89,
       "fees": 1221,
       "tax": 0,
-      "net": 4987379,
-      "net_ret": -0.25,
-      "cash_ratio": 0.834,
+      "net": 4954129,
+      "net_ret": -0.92,
+      "cash_ratio": 0.84,
       "n_orders": 9,
       "n_bought": 3,
       "n_short": 6,
@@ -77,19 +77,19 @@
           "shares": 200
         }
       ],
-      "last_day_chg": 0.17,
-      "asof": "2026-11-19"
+      "last_day_chg": -0.67,
+      "asof": "2026-11-20"
     },
     {
       "name": "1,000万円",
       "start": 10000000,
-      "total": 9960350,
-      "ret": -0.4,
+      "total": 9857700,
+      "ret": -1.42,
       "fees": 3509,
       "tax": 0,
-      "net": 9956841,
-      "net_ret": -0.43,
-      "cash_ratio": 0.695,
+      "net": 9854191,
+      "net_ret": -1.46,
+      "cash_ratio": 0.778,
       "n_orders": 9,
       "n_bought": 6,
       "n_short": 3,
@@ -113,18 +113,13 @@
           "code": "8309",
           "name": "三井住友トラストグループ",
           "shares": 500
-        },
-        {
-          "code": "8411",
-          "name": "みずほフィナンシャルグループ",
-          "shares": 100
         }
       ],
-      "last_day_chg": 0.03,
-      "asof": "2026-11-19"
+      "last_day_chg": -1.03,
+      "asof": "2026-11-20"
     }
   ],
-  "main_ret": -2.3,
-  "bench_ret": 2.56,
-  "main_asof": "2026-11-19"
+  "main_ret": -3.55,
+  "bench_ret": -2.63,
+  "main_asof": "2026-11-20"
 }
