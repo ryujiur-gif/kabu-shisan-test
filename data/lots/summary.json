@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-20",
+  "asof": "2026-11-24",
   "lot": 100,
   "scenarios": [
     {
@@ -17,18 +17,18 @@
       "n_short": 9,
       "holdings": [],
       "last_day_chg": 0.0,
-      "asof": "2026-11-20"
+      "asof": "2026-11-24"
     },
     {
       "name": "300万円",
       "start": 3000000,
-      "total": 2982100,
-      "ret": -0.6,
+      "total": 2987650,
+      "ret": -0.41,
       "fees": 583,
       "tax": 0,
-      "net": 2981517,
-      "net_ret": -0.62,
-      "cash_ratio": 0.901,
+      "net": 2987067,
+      "net_ret": -0.43,
+      "cash_ratio": 0.9,
       "n_orders": 9,
       "n_bought": 2,
       "n_short": 7,
@@ -44,28 +44,23 @@
           "shares": 100
         }
       ],
-      "last_day_chg": -0.42,
-      "asof": "2026-11-20"
+      "last_day_chg": 0.19,
+      "asof": "2026-11-24"
     },
     {
       "name": "500万円",
       "start": 5000000,
-      "total": 4955350,
-      "ret": -0.89,
+      "total": 4971450,
+      "ret": -0.57,
       "fees": 1221,
       "tax": 0,
-      "net": 4954129,
-      "net_ret": -0.92,
-      "cash_ratio": 0.84,
+      "net": 4970229,
+      "net_ret": -0.6,
+      "cash_ratio": 0.879,
       "n_orders": 9,
       "n_bought": 3,
       "n_short": 6,
       "holdings": [
-        {
-          "code": "1803",
-          "name": "清水建設",
-          "shares": 100
-        },
         {
           "code": "3402",
           "name": "東レ",
@@ -77,19 +72,19 @@
           "shares": 200
         }
       ],
-      "last_day_chg": -0.67,
-      "asof": "2026-11-20"
+      "last_day_chg": 0.32,
+      "asof": "2026-11-24"
     },
     {
       "name": "1,000万円",
       "start": 10000000,
-      "total": 9857700,
-      "ret": -1.42,
+      "total": 9890550,
+      "ret": -1.09,
       "fees": 3509,
       "tax": 0,
-      "net": 9854191,
-      "net_ret": -1.46,
-      "cash_ratio": 0.778,
+      "net": 9887041,
+      "net_ret": -1.13,
+      "cash_ratio": 0.818,
       "n_orders": 9,
       "n_bought": 6,
       "n_short": 3,
@@ -98,11 +93,6 @@
           "code": "9022",
           "name": "東海旅客鉄道",
           "shares": 100
-        },
-        {
-          "code": "1803",
-          "name": "清水建設",
-          "shares": 200
         },
         {
           "code": "3402",
@@ -115,11 +105,11 @@
           "shares": 500
         }
       ],
-      "last_day_chg": -1.03,
-      "asof": "2026-11-20"
+      "last_day_chg": 0.33,
+      "asof": "2026-11-24"
     }
   ],
-  "main_ret": -3.55,
-  "bench_ret": -2.63,
-  "main_asof": "2026-11-20"
+  "main_ret": -3.14,
+  "bench_ret": 1.18,
+  "main_asof": "2026-11-24"
 }

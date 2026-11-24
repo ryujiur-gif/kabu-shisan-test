@@ -1,0 +1,91 @@
+{
+  "today": "2026-11-25",
+  "market": [
+    {
+      "label": "日経225先物（CME・円建て）",
+      "ticker": "NIY=F",
+      "close": 57410.0,
+      "chg": -0.95,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "日経平均",
+      "ticker": "^N225",
+      "close": 58644.63,
+      "chg": 3.91,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "NYダウ",
+      "ticker": "^DJI",
+      "close": 50018.7,
+      "chg": 0.85,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "S&P500",
+      "ticker": "^GSPC",
+      "close": 7201.09,
+      "chg": -0.5,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "ナスダック総合",
+      "ticker": "^IXIC",
+      "close": 23733.54,
+      "chg": -1.48,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "フィラデルフィア半導体指数",
+      "ticker": "^SOX",
+      "close": 8832.5,
+      "chg": -7.88,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "VIX（恐怖指数）",
+      "ticker": "^VIX",
+      "close": 26.36,
+      "chg": -0.98,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "ドル円",
+      "ticker": "JPY=X",
+      "close": 159.21,
+      "chg": 0.18,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "米10年国債利回り",
+      "ticker": "^TNX",
+      "close": 4.9,
+      "chg": -0.28,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "WTI原油",
+      "ticker": "CL=F",
+      "close": 81.66,
+      "chg": 1.86,
+      "date": "2026-11-24"
+    },
+    {
+      "label": "金",
+      "ticker": "GC=F",
+      "close": 3553.3,
+      "chg": -2.69,
+      "date": "2026-11-24"
+    }
+  ],
+  "missing": [],
+  "gap": {
+    "futures": 57410.0,
+    "nikkei": 58644.63,
+    "gap": -2.11
+  },
+  "imminent": [],
+  "mood": "リスクオフ（警戒）",
+  "health": []
+}
