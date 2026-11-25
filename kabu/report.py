@@ -54,7 +54,8 @@ def after_tax_line(total: int, trades: list | None, fee_rate) -> str:
 
 
 def build_email(order, state, history_rows, last_trades, site_url, market=None, notices=None, gap=None,
-                review=None, cautions=None, all_trades=None, fee_rate: float = 0.0, lots=None) -> dict:
+                review=None, cautions=None, all_trades=None, fee_rate: float = 0.0, lots=None,
+                trend=None, indicators=None, lot: int = 1) -> dict:
     d = date.fromisoformat(order["date"])
     buys = "・".join(b["name"] for b in order["buys"]) or "なし"
     sells = "・".join(s["name"] for s in order["sells"]) or "なし"
@@ -78,10 +79,20 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
     f = funds(state)
     if f["total"] > 0:
         L += ["【資金状況（前日終値）】",
-              f"総資産 {_yen(f['total'])}　現金 {_yen(f['cash'])}（{f['cash_ratio']:.0%}）　株式 {_yen(f['stock_value'])}", ""]
+              f"総資産 {_yen(f['total'])}　現金 {_yen(f['cash'])}（{f['cash_ratio']:.0%}）　株式 {_yen(f['stock_value'])}"]
+        if trend:
+            from kabu.ledger import WEAK_STOCK_CAP
+            if trend.get("above") is False:
+                L.append(f"地合い：日経平均は25日線より下（{trend['dev']:+.2f}%）→ 株は総資産の{WEAK_STOCK_CAP:.0%}まで・新しい買いは期待度「高」のみ")
+            else:
+                L.append(f"地合い：日経平均は25日線より上（{trend['dev']:+.2f}%）→ 上限なし")
+        L.append("")
     L.append("【買い】")
     for b in order["buys"]:
-        L.append(f"・{b['name']}（{b['code']}）期待度：{b['confidence']}　予定額：{_yen(amount_for(b['confidence'], f['total']))}（総資産の{int(RATIOS[b['confidence']] * 100)}%）")
+        budget = amount_for(b['confidence'], f['total'])
+        px = ((indicators or {}).get(b["code"]) or {}).get("close")
+        plan = f"　{lot}株単位で約{int(budget // px) // lot * lot:,}株の見込み" if lot > 1 and px else ""
+        L.append(f"・{b['name']}（{b['code']}）期待度：{b['confidence']}　予定額：{_yen(budget)}（総資産の{int(RATIOS[b['confidence']] * 100)}%）{plan}")
         L.append(f"　理由：{b['reason']}")
     if not order["buys"]:
         L.append("・なし（本日は買いの基準を満たす銘柄なし）")
@@ -103,7 +114,8 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
         L += ["", "【過去の傾向からの注意】"] + [f"・{c}" for c in cautions]
     if str(order.get("learned", "")).strip():
         L += ["", "【振り返りの反映】", order["learned"].strip()]
-    L.append("※売買は本日の始値で成立したものとして記録します。始値が前日終値より5%以上高い買いは見送ります。")
+    L.append("※売買は本日の始値で成立したものとして記録します。始値が前日終値より5%以上高い買いは見送ります。"
+             + (f"新しい買いは{lot}株単位です。" if lot > 1 else ""))
 
     L += ["", "■ 前回の約定結果"]
     if last_trades:

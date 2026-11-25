@@ -11,6 +11,7 @@ from pathlib import Path
 from kabu.picks import (check_entry_rules, check_learning, check_note_quality, check_notes, check_sell_rules,
                         load_sectors, load_universe, pattern_cautions, validate_order)
 from kabu.report import build_email, build_site
+from kabu.settle import trade_settings
 from kabu.settle import jst_today, read_rows
 
 
@@ -75,6 +76,8 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
         cal = _earn.load(data / "earnings.csv")
         errs = check_entry_rules(order, indicators, (b or {}).get("imminent"), earnings=cal, today=today)
         errs += check_sell_rules(order, state, read_rows(data / "trades.csv"), today)
+        from kabu.picks import check_lot_rules
+        errs += check_lot_rules(order, state, indicators, (b or {}).get("trend25"), trade_settings(data)["lot"])
         errs += check_learning(order, review, journal, playbook)
     if errs:
         return 1, errs
@@ -111,7 +114,8 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
     (root / "out" / "email.json").write_text(
         json.dumps(build_email(order, state, hist, last, site_url, market=market, notices=notices, gap=gap,
                                review=review, cautions=cautions, all_trades=trades, fee_rate=fee_rate,
-                               lots=_lots.load(root)),
+                               lots=_lots.load(root), trend=(b or {}).get("trend25"), indicators=indicators,
+                               lot=trade_settings(data)["lot"]),
                    ensure_ascii=False, indent=2),
         encoding="utf-8")
     (root / "docs").mkdir(exist_ok=True)

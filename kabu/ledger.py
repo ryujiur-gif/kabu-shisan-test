@@ -7,6 +7,7 @@ RATIOS = {"高": 0.20, "中": 0.10, "低": 0.05}
 MIN_CASH_RATIO = 0.10    # 買った後も現金を総資産の10%以上残す
 MAX_STOCK_RATIO = 0.30   # 1銘柄の保有額は総資産の30%まで
 MAX_SECTOR_RATIO = 0.30  # 1業種の保有額は総資産の30%まで
+WEAK_STOCK_CAP = 0.30   # 日経平均が25日線より下の間は、株の合計を総資産の30%まで（2026-11-25 竜司さん決定）
 MAX_OPEN_GAP = 5.0       # 始値が前日終値より +5% 以上高い買いは見送る（高値づかみを避ける）
 TAX_RATE = 0.20315       # 利益・配当にかかる税（概算の「税引き後」の計算に使う）
 PORTIONS = {"全部": 1.0, "半分": 0.5}
@@ -60,7 +61,8 @@ def open_gap(price: float, ref_close: float | None) -> float | None:
 
 
 def settle(state: dict, order: dict, opens: dict[str, float],
-           ref_closes: dict[str, float] | None = None, lot: int = 1) -> tuple[dict, list[dict]]:
+           ref_closes: dict[str, float] | None = None, lot: int = 1,
+           stock_cap: float | None = None) -> tuple[dict, list[dict]]:
     """注文を始値で約定する。ref_closes（前日終値）があれば、始値が高すぎる買いを見送る。
     lot は売買単位（本体は1株。100株単位の試算では100）。"""
     st = copy.deepcopy(state)
@@ -93,6 +95,14 @@ def settle(state: dict, order: dict, opens: dict[str, float],
                                            f"元の理由：{item.get('reason', '')}"}, 0, price, "見送り"))
             continue
         budget = min(amount_for(item["confidence"], total), st["cash"])
+        if stock_cap is not None:   # 地合いが弱い間の上限：買った後の株の合計を総資産の stock_cap まで
+            stock_now = sum(int(x["shares"] * (opens.get(c) or price_of(st, c))) for c, x in st["holdings"].items())
+            room = int(total * stock_cap) - stock_now
+            if room < price * lot:
+                trades.append(_trade(d, "買", {**item, "reason": f"地合いの上限（株は総資産の{stock_cap:.0%}まで）に達していたため見送り。"
+                                               f"元の理由：{item.get('reason', '')}"}, 0, price, "見送り"))
+                continue
+            budget = min(budget, room)
         shares = int(budget // price) // lot * lot
         if shares <= 0:
             trades.append(_trade(d, "買", item, 0, price, "見送り"))

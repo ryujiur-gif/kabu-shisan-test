@@ -67,6 +67,26 @@ def _ref_closes(data_dir: Path, d: str) -> dict:
     return {c: x["close"] for c, x in ind.items() if isinstance(x, dict) and x.get("close")}
 
 
+def trade_settings(data_dir: Path) -> dict:
+    """config.json の売買単位（lot）。無ければ1株単位。"""
+    try:
+        cfg = _read_json(Path(data_dir).parent / "config.json")
+    except (OSError, json.JSONDecodeError):
+        cfg = {}
+    return {"lot": int(cfg.get("lot", 1) or 1)}
+
+
+def regime_cap(data_dir: Path, d: str):
+    """その日の朝の資料で、日経平均が25日線より下だったら株の上限（総資産比）を返す。上でなければ None。"""
+    from kabu.ledger import WEAK_STOCK_CAP
+    try:
+        b = _read_json(Path(data_dir) / "daily" / d / "briefing.json")
+    except (OSError, json.JSONDecodeError):
+        return None
+    t = b.get("trend25") or {}
+    return WEAK_STOCK_CAP if t.get("above") is False else None
+
+
 def run(today: date, data_dir: Path, fetch=None, actions_fetch=None, even_if_holiday: bool = False) -> dict:
     """fetch を差し替えたとき（テスト）は、actions_fetch を渡さない限り配当・分割の取得をしない。
     even_if_holiday：休場日（土曜の週次まとめなど）でも、前営業日分の確定と評価を行う。"""
@@ -155,7 +175,8 @@ def run(today: date, data_dir: Path, fetch=None, actions_fetch=None, even_if_hol
             new_trades += corporate.apply(state, old_trades + new_trades, d, acts[d])
         for f, o in pending:
             if o["date"] == d:
-                state, tr = settle(state, o, opens_by_date[d], _ref_closes(data_dir, d))
+                state, tr = settle(state, o, opens_by_date[d], _ref_closes(data_dir, d),
+                                   lot=trade_settings(data_dir)["lot"], stock_cap=regime_cap(data_dir, d))
                 new_trades += tr
     last_closes = state.get("last_closes", {})   # 分割で調整された場合に備えて取り直す
     if bench_open:
@@ -192,7 +213,7 @@ def run(today: date, data_dir: Path, fetch=None, actions_fetch=None, even_if_hol
     for t in new_trades:
         if t["side"] in ("配当", "分割"):
             notes.append(f"{t['name']}：{t['reason']}" + (f" {t['amount']:,}円を入金" if t["side"] == "配当" else ""))
-        elif t["status"] == "見送り" and str(t.get("reason", "")).startswith("始値が"):
+        elif t["status"] == "見送り" and str(t.get("reason", "")).startswith(("始値が", "地合いの上限")):
             notes.append(f"{t['name']} の買いは見送り（{t['reason'].split('。')[0]}）")
     if notes:
         msg += "。" + "。".join(notes)

@@ -226,7 +226,7 @@ def funds_lines(f: dict, holdings: list, mood: str, sector_w: dict | None = None
 def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fund_date=None,
                     crosses=None, value=None, peer=None, regime=None, funds_info=None,
                     gap=None, events_md=None, review_md=None, health=None,
-                    sector_w=None, earnings_md=None, sector_md=None) -> str:
+                    sector_w=None, earnings_md=None, sector_md=None, trend_md=None, affordable_md=None) -> str:
     fund = fund or {}
     fg = lambda code, k: (fund.get(code) or {}).get(k)
     L = [f"# 朝の資料 {today}", "", "数値はプログラムで取得した前営業日（米国は前夜）の終値です。ニュース検索の数値より優先してください。", ""]
@@ -252,6 +252,8 @@ def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fun
         L += [f"| {t}{TYPE_LABELS[t]} | {g} |" for t, g in TYPE_GUIDE.items()]
     if funds_info:
         L += funds_lines(funds_info, holdings, (regime or {}).get("mood", ""), sector_w)
+    if trend_md:
+        L += trend_md
     if earnings_md:
         L += earnings_md
     L += ["", "## 2. 持ち株の点検", ""]
@@ -269,6 +271,8 @@ def render_briefing(today, market, holdings, ranks, names, notes, fund=None, fun
     L += ["", "## 3. 日経225 値動きスクリーニング", "",
           "買い候補探しの出発点です（上昇・出来高急増は材料が出ている可能性、下方乖離・RSI低は売られすぎの可能性）。",
           "ここに出た銘柄は、理由となるニュースを検索で確かめてから採用すること。", ""]
+    if affordable_md:
+        L += affordable_md
     if sector_md:
         L += sector_md
     for label, items in ranks.items():
@@ -403,6 +407,60 @@ def merge_nikkei(bars: list[dict], hist_rows: list[dict]) -> list[dict]:
     return sorted(bars + extra, key=lambda b: b["d"])
 
 
+def trend25(nbars: list[dict], prev_day: str) -> dict | None:
+    """日経平均の前営業日の終値と25日移動平均。above が False なら「地合いが弱い」（株の上限がかかる）。"""
+    closes = [b["c"] for b in nbars or [] if b["d"] <= prev_day and b.get("c")]
+    if len(closes) < 25:
+        return None
+    ma = sum(closes[-25:]) / 25
+    return {"close": round(closes[-1], 2), "ma25": round(ma, 2), "dev": round((closes[-1] / ma - 1) * 100, 2),
+            "above": closes[-1] > ma}
+
+
+def trend_lines(t: dict | None, f: dict | None, lot: int, holdings_value: int | None = None) -> list[str]:
+    """朝の資料の「地合いの上限と100株単位」。"""
+    from kabu.ledger import RATIOS, WEAK_STOCK_CAP, amount_for
+    L = ["", "### 地合いの上限と100株単位（プログラムが点検する決まり）", ""]
+    if t:
+        if t["above"]:
+            L.append(f"- 日経平均 {t['close']:,.0f} は25日線 {t['ma25']:,.0f} より上（{t['dev']:+.2f}%）→ **地合いの上限なし**（通常どおり）")
+        else:
+            room = ""
+            if f:
+                left = int(f["total"] * WEAK_STOCK_CAP) - f["stock_value"]
+                room = f"。いまの株は総資産の{f['stock_value'] / f['total']:.0%}で、上限まであと **{max(left, 0):,}円**"
+            L.append(f"- 日経平均 {t['close']:,.0f} は25日線 {t['ma25']:,.0f} より下（{t['dev']:+.2f}%）→ **地合いが弱い：株の合計は総資産の"
+                     f"{WEAK_STOCK_CAP:.0%}まで、新しい買いは期待度「高」のみ**{room}")
+    else:
+        L.append("- 日経平均の25日線を計算できませんでした（上限の点検は行わない）")
+    if lot > 1 and f:
+        caps = "／".join(f"{k} 株価{int(amount_for(k, f['total']) / lot):,}円まで" for k in RATIOS)
+        L.append(f"- 新しい買いは{lot}株単位。{lot}株の代金が予定額に収まる銘柄だけ買える：{caps}")
+        L.append(f"- 銘柄名の［{lot}株◯万円］が、その銘柄を{lot}株買う代金の目安（前日終値）")
+    return L
+
+
+def affordable_lines(ind: dict, names: dict, fund: dict, max_price: float, lot: int, limit: int = 60) -> list[str]:
+    """100株（lot）で買える銘柄の一覧。25日線からの上方乖離の大きい順（研究で唯一有利と出た条件）。"""
+    rows = [(c, x) for c, x in ind.items() if x and x.get("close") and x["close"] <= max_price and c in names]
+    if not rows:
+        return []
+    rows.sort(key=lambda t: -(t[1].get("ma25_dev") or -999))
+    L = [f"### {lot}株で買える銘柄（株価{max_price:,.0f}円以下・{len(rows)}銘柄。25日線から上に離れている順）", "",
+         "研究（日経225全銘柄・過去2年）では、25日線から+10%以上上に離れた銘柄はその後5日の成績が他の銘柄より良かった（+0.37%）。"
+         "ただし差は小さいので、材料（手順3）の確認が先。", "",
+         f"| 銘柄 | 終値 | {lot}株の代金 | 前日比 | 5日 | 25日線乖離 | RSI14 | 出来高倍率 | PER | PBR |",
+         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    for c, x in rows[:limit]:
+        f = fund.get(c) or {}
+        L.append(f"| {names.get(c, c)}({c}) | {_n(x['close'])} | {x['close'] * lot / 10000:.1f}万円 | {_p(x.get('chg1d'))} | "
+                 f"{_p(x.get('chg5d'))} | {_p(x.get('ma25_dev'))} | {_n(x.get('rsi14'), '{:.0f}')} | "
+                 f"{_n(x.get('vol_ratio'), '{:.1f}倍')} | {_x(f.get('per'))} | {_x(f.get('pbr'), '{:.2f}倍')} |")
+    if len(rows) > limit:
+        L.append(f"| ほか {len(rows) - limit}銘柄（kabu.lookup で確認） | | | | | | | | | |")
+    return L + [""]
+
+
 def missing_market(market: list[dict]) -> list[str]:
     """取得できなかった主要指標の注記（メールの「一部を取得できませんでした」に使う）。"""
     return [f"{m['label']}（{m['ticker']}）" for m in market if m.get("close") is None]
@@ -491,10 +549,15 @@ def build(root: Path, today: str) -> tuple[str, dict]:
         notes.append("財務データ（data/fundamentals.csv）がまだありません")
     types = {c: classify(c, sectors.get(c, "")) for c in names}
     names = {c: f"{n}〔{types[c]}{TYPE_LABELS[types[c]]}〕" for c, n in names.items()}
+    from kabu.settle import trade_settings
+    lot = trade_settings(root / "data")["lot"]
+    if lot > 1:   # 100株の代金の目安を銘柄名に添える
+        names = {c: n + (f"［{lot}株{ind[c]['close'] * lot / 10000:.1f}万円］" if (ind.get(c) or {}).get("close") else "")
+                 for c, n in names.items()}
     for h in holdings:
         t = classify(h["code"], sectors.get(h["code"], ""))
         h["name"] = f"{h['name']}〔{t}{TYPE_LABELS[t]}〕"
-    from kabu.ledger import funds
+    from kabu.ledger import amount_for, funds
     from kabu.events import events_lines, imminent_high, load_events
     funds_info = funds(state, {h["code"]: h["close"] for h in holdings if h.get("close")}) \
         if "cash" in state else None
@@ -517,6 +580,7 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     earnings_md = _earn.briefing_lines(cal, tday, {c: h["name"] for c, h in state["holdings"].items()}, plain)
     gap = futures_gap(market)
     regime = market_regime(market)
+    t25 = trend25(series.get("N225") or [], prev_day)
     imminent = [e["event"] for e in imminent_high(events, tday)]
     # データの点検・修復と、予想の振り返り（学習）
     from kabu import health as _health, review as _review
@@ -544,9 +608,13 @@ def build(root: Path, today: str) -> tuple[str, dict]:
                          peer=rank_peer_value({c: fund.get(c) for c in names}, sectors,
                                               sector_medians(fund, sectors)),
                          gap=gap, events_md=events_lines(events, tday),
-                         sector_w=sector_w, earnings_md=earnings_md, sector_md=sector_md)
+                         sector_w=sector_w, earnings_md=earnings_md, sector_md=sector_md,
+                         trend_md=trend_lines(t25, funds_info, lot),
+                         affordable_md=affordable_lines(ind, names, fund,
+                                                        amount_for("高", funds_info["total"]) / lot, lot)
+                         if lot > 1 and funds_info else None)
     return md, {"today": today, "market": market, "missing": notes, "gap": gap,
-                "imminent": imminent, "mood": regime.get("mood"), "health": problems,
+                "imminent": imminent, "mood": regime.get("mood"), "health": problems, "trend25": t25, "lot": lot,
                 "indicators": {c: x for c, x in ind.items() if x}}
 
 

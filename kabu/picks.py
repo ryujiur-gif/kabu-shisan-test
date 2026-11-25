@@ -238,6 +238,44 @@ def check_sell_rules(order: dict, state: dict, trades: list[dict], today: str) -
     return errs
 
 
+def check_lot_rules(order: dict, state: dict, indicators: dict | None, trend: dict | None, lot: int) -> list[str]:
+    """100株単位で買えるか（100株の代金が予定額以下か）と、地合いが弱い間の上限（期待度「高」のみ・株は総資産の30%まで）。
+    値段は朝の資料の前日終値で試算する。"""
+    from kabu.ledger import WEAK_STOCK_CAP, amount_for, funds, sell_shares
+    errs = []
+    buys = order.get("buys", [])
+    if not buys:
+        return errs
+    f = funds(state)
+    total = f["total"]
+    weak = bool(trend) and trend.get("above") is False
+    stock = f["stock_value"]
+    for s in order.get("sells", []):
+        h = state["holdings"].get(s.get("code"))
+        if h and s.get("code") in f["values"]:
+            stock -= f["values"][s["code"]] * sell_shares(h["shares"], s.get("portion")) / h["shares"]
+    room = int(total * WEAK_STOCK_CAP - stock)
+    for b in buys:
+        code, conf = b.get("code"), b.get("confidence")
+        px = ((indicators or {}).get(code) or {}).get("close")
+        if weak and conf != "高":
+            errs.append(f"買い {code}：日経平均が25日線より下の間は、新しい買いは期待度「高」だけです（今は「{conf}」）。"
+                        "「高」と言える材料が無ければ見送ってください")
+        if not px or conf not in ("高", "中", "低"):
+            continue
+        cost = px * lot
+        budget = amount_for(conf, total)
+        if lot > 1 and cost > budget:
+            errs.append(f"買い {code}：{lot}株の代金（約{cost:,.0f}円）が期待度「{conf}」の予定額（{budget:,}円）を超えるので買えません。"
+                        f"株価{int(budget / lot):,}円以下の銘柄を選ぶか、材料が十分なら期待度を上げてください")
+        if weak:
+            if room < cost:
+                errs.append(f"買い {code}：地合いが弱い間は株の合計が総資産の{WEAK_STOCK_CAP:.0%}までで、上限まであと{max(room, 0):,}円です。"
+                            f"{lot}株（約{cost:,.0f}円）は買えません。見送るか、もっと安い銘柄にしてください")
+            room -= min(budget, max(room, 0))
+    return errs
+
+
 RSI_LIMIT = 75.0       # これ以上は飛びつき買いとして買わない（ROUTINE.md 手順4-3 b）
 MA25_LIMIT = 15.0
 CASES_PER_DAY = 3      # 1日に求める振り返りの件数の上限
