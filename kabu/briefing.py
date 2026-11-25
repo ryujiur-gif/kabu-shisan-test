@@ -403,6 +403,11 @@ def merge_nikkei(bars: list[dict], hist_rows: list[dict]) -> list[dict]:
     return sorted(bars + extra, key=lambda b: b["d"])
 
 
+def missing_market(market: list[dict]) -> list[str]:
+    """取得できなかった主要指標の注記（メールの「一部を取得できませんでした」に使う）。"""
+    return [f"{m['label']}（{m['ticker']}）" for m in market if m.get("close") is None]
+
+
 def fix_nikkei(market: list[dict], prev_day: str, nbars: list[dict], fetch=None) -> list[dict]:
     """主要指標の日経平均が前営業日の値でないとき（早朝は直近の足が欠けることがある）、
     記録済みの終値（nbars）か個別取得で差し替える。直せなければそのまま返す（点検で注記される）。"""
@@ -454,8 +459,7 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     except Exception as e:
         market = []
         notes.append(f"主要指標の取得に失敗: {e}")
-    notes += [f"{m['label']}（{m['ticker']}）" for m in market if m["close"] is None]
-    codes = list(dict.fromkeys(list(names) + list(state["holdings"])))
+    codes =list(dict.fromkeys(list(names) + list(state["holdings"])))
     all_trades = read_rows(root / "data" / "trades.csv")
     from kabu import lots as _lots
     keep = list(dict.fromkeys([t["code"] for t in all_trades] + list(state["holdings"])
@@ -470,6 +474,8 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     prev_day = previous_trading_day(tday).isoformat()
     series["N225"] = merge_nikkei(series.get("N225") or [], read_rows(root / "data" / "history.csv"))
     market = fix_nikkei(market, prev_day, series["N225"], fetch=get_nikkei)
+    # 取得できなかった指標は、日経平均を記録済みの終値で補ったあとに数える（補えたものは注記しない）
+    notes += missing_market(market)
     missing = [c for c in names if not ind.get(c)]
     if missing:
         notes.append(f"株価が取れなかった銘柄 {len(missing)} 件: {', '.join(missing[:20])}{' ほか' if len(missing) > 20 else ''}")

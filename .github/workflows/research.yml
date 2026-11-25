@@ -1,0 +1,48 @@
+name: 週1回の研究と自己テスト
+
+on:
+  schedule:
+    - cron: "0 21 * * 6"   # 日曜 6:00 JST
+  push:
+    paths: ["data/request-research/**"]   # 日曜の Claude が未作成のときに依頼ファイルを push して起動する
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: morning-data
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q -r requirements.txt
+      - name: 自己テスト（プログラムの点検）
+        run: |
+          mkdir -p data/research
+          { echo "実行日時: $(TZ=Asia/Tokyo date '+%F %T')"; python -m pytest -q 2>&1 | tail -30; } > data/research/selftest.txt || true
+          python - <<'EOF' >> data/research/selftest.txt
+          from datetime import date, timedelta, timezone, datetime
+          from pathlib import Path
+          from kabu import health
+          today = (datetime.now(timezone.utc) + timedelta(hours=9)).date()
+          print("データの点検:", health.check(Path("."), today) or "問題なし")
+          EOF
+      - name: 研究（日経225全銘柄・過去2年）
+        run: python -m kabu.research
+      - name: 保存
+        run: |
+          git config user.name "kabu-shisan-test"
+          git config user.email "kabu-shisan-test@users.noreply.github.com"
+          git add data/research
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git commit -m "研究と自己テスト $(TZ=Asia/Tokyo date +%F)"
+          for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0; sleep 5; done
+          exit 1
