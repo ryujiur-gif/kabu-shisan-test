@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-24",
+  "asof": "2026-11-25",
   "lot": 100,
   "scenarios": [
     {
@@ -17,17 +17,17 @@
       "n_short": 9,
       "holdings": [],
       "last_day_chg": 0.0,
-      "asof": "2026-11-24"
+      "asof": "2026-11-25"
     },
     {
       "name": "300万円",
       "start": 3000000,
-      "total": 2987650,
-      "ret": -0.41,
+      "total": 2985700,
+      "ret": -0.48,
       "fees": 583,
       "tax": 0,
-      "net": 2987067,
-      "net_ret": -0.43,
+      "net": 2985117,
+      "net_ret": -0.5,
       "cash_ratio": 0.9,
       "n_orders": 9,
       "n_bought": 2,
@@ -44,19 +44,19 @@
           "shares": 100
         }
       ],
-      "last_day_chg": 0.19,
-      "asof": "2026-11-24"
+      "last_day_chg": -0.07,
+      "asof": "2026-11-25"
     },
     {
       "name": "500万円",
       "start": 5000000,
-      "total": 4971450,
-      "ret": -0.57,
+      "total": 4967550,
+      "ret": -0.65,
       "fees": 1221,
       "tax": 0,
-      "net": 4970229,
-      "net_ret": -0.6,
-      "cash_ratio": 0.879,
+      "net": 4966329,
+      "net_ret": -0.67,
+      "cash_ratio": 0.88,
       "n_orders": 9,
       "n_bought": 3,
       "n_short": 6,
@@ -72,18 +72,18 @@
           "shares": 200
         }
       ],
-      "last_day_chg": 0.32,
-      "asof": "2026-11-24"
+      "last_day_chg": -0.08,
+      "asof": "2026-11-25"
     },
     {
       "name": "1,000万円",
       "start": 10000000,
-      "total": 9890550,
-      "ret": -1.09,
+      "total": 9892400,
+      "ret": -1.08,
       "fees": 3509,
       "tax": 0,
-      "net": 9887041,
-      "net_ret": -1.13,
+      "net": 9888891,
+      "net_ret": -1.11,
       "cash_ratio": 0.818,
       "n_orders": 9,
       "n_bought": 6,
@@ -105,11 +105,11 @@
           "shares": 500
         }
       ],
-      "last_day_chg": 0.33,
-      "asof": "2026-11-24"
+      "last_day_chg": 0.02,
+      "asof": "2026-11-25"
     }
   ],
-  "main_ret": -3.14,
-  "bench_ret": 1.18,
-  "main_asof": "2026-11-24"
+  "main_ret": -3.01,
+  "bench_ret": -1.64,
+  "main_asof": "2026-11-25"
 }
