@@ -64,6 +64,8 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
     L = [f"■ 本日（{d.month}/{d.day}）の予想", ""]
     if notices:
         L += [f"※{n}" for n in notices] + [""]
+    if str(order.get("plain", "")).strip():
+        L += ["【ひとことで言うと】", order["plain"].strip(), ""]
     L += ["【市況】", order["summary"].strip(), ""]
     if market:
         L.append("【主要指標（前日終値）】")
@@ -145,8 +147,32 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
             L.append(f"・{hd['name']}（{c}）{hd['shares']:,}株 取得{hd['avg_cost']:,.1f}→{px:,.1f}円 {_signed(pl)}")
     from kabu.lots import lines as lot_lines
     L += lot_lines(lots)
-    L += ["", f"成績ページ：{site_url}", "", NOTE]
+    L += ["", f"成績ページ：{site_url}（ことばの意味は、ページの下の「ことばの説明」にあります）", "", NOTE]
     return {"subject": subject, "body": "\n".join(L) + "\n"}
+
+
+GLOSSARY = [
+    ("日経平均", "日本を代表する大企業225社の株価をまとめた数字。「株の世界全体の調子」の目安。この試験運用は、日経平均に勝てるかで成績を見ています。"),
+    ("100株単位", "日本の株は、ふつう100株をひとまとまりにして売り買いします。株価が1,000円なら、100株で10万円です。"),
+    ("期待度（高・中・低）", "その銘柄がどれだけ上がりそうかの自信の度合い。高いほど多くのお金で買います（総資産の20%・10%・5%）。"),
+    ("損切り", "買った値段から8%下がったら、それ以上の損を防ぐために売ること。悔しくても決まりどおり売ります。"),
+    ("利益確定", "値上がりした株を売って、もうけを確定させること。"),
+    ("25日線", "その株（または日経平均）の、最近25日間の値段の平均。今の値段がこれより上なら「上り調子」、下なら「下り調子」の目安。"),
+    ("地合い", "株の世界全体の調子。このシステムでは、日経平均が25日線より下なら「地合いが弱い」として、株を総資産の30%までに抑えます。"),
+    ("高寄り・安寄り", "朝、株の取り引きが始まったときの値段（始値）が、前の日の終わりの値段より高いのが高寄り、低いのが安寄り。"),
+    ("現金比率", "持っているお金全体のうち、株にせず現金で持っている割合。"),
+    ("RSI", "最近よく上がった株ほど大きくなる数字（0〜100）。70以上は「上がりすぎ」、30以下は「下がりすぎ」の目安。"),
+    ("PER・PBR", "株の「割安さ」の目安。数字が小さいほど、会社のもうけや財産の割に株価が安い。"),
+    ("上方修正・増配・自社株買い", "会社が「もうけの見込みを上げる」「配当を増やす」「自分の会社の株を買う」と発表すること。株価が上がるきっかけになりやすい。"),
+    ("決算", "会社が3か月ごとに、もうけを発表すること。発表の前後は株価が大きく動きやすいので、直前の買いは控えます。"),
+    ("リスクオン・リスクオフ", "投資家が強気（株を買いたい）なのがリスクオン、弱気（株を手放したい）なのがリスクオフ。"),
+]
+
+
+def glossary_section() -> str:
+    """成績ページの「ことばの説明」（初心者向け）。"""
+    rows = "".join(f"<div class='pick'><b>{_e(w)}</b><p>{_e(m)}</p></div>" for w, m in GLOSSARY)
+    return "<section class='card'><h2>ことばの説明</h2>" + rows + "</section>"
 
 
 def _e(x) -> str:
@@ -304,7 +330,8 @@ def build_site(state, history_rows, trades_rows, order, review=None, sectors=Non
         items += [("売", s["name"], s["code"], sell_word(s, state), s["reason"]) for s in order["sells"]]
         items += [("保有", x.get("name", ""), x["code"], OUTLOOK_WORDS.get(x["outlook"], x["outlook"]), x["reason"])
                   for x in order.get("holds") or []]
-        picks = f"<p class='summary'>{_e(order['summary'])}</p>" + "".join(
+        plain = f"<p class='summary'><b>ひとことで言うと：</b>{_e(order['plain'])}</p>" if str(order.get("plain", "")).strip() else ""
+        picks = plain + f"<p class='summary'>{_e(order['summary'])}</p>" + "".join(
             f"<div class='pick'><span class='tag {_TAG_CLASS.get(k, '')}'>{k}</span>"
             f"<b>{_e(n)}</b> <small>{_e(c)}・{_e(m)}</small><p>{_e(r)}</p></div>" for k, n, c, m, r in items)
 
@@ -330,6 +357,7 @@ def build_site(state, history_rows, trades_rows, order, review=None, sectors=Non
 <section class="card"><h2>持ち株</h2><div class="scroll"><table><tr><th>銘柄</th><th>株数</th><th>取得単価</th><th>現在値</th><th>損益</th></tr>{hold_rows}</table></div>
 <p class="sub" style="margin:8px 0 0">現金：{_yen(state['cash'])}</p></section>
 <section class="card"><h2>取引履歴</h2><div class="scroll"><table><tr><th>日付</th><th>売買</th><th>銘柄</th><th>株数</th><th>単価</th><th>状態</th></tr>{trade_rows}</table></div></section>
+{glossary_section()}
 <footer>{NOTE}</footer>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>

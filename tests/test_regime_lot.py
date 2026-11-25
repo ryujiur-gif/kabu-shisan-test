@@ -147,3 +147,18 @@ def test_cap_flows_to_checks_settle_and_text(tmp_path):
     assert "株の合計は総資産の40%まで" in text and "上限まであと **50,000円**" in text and "条件を満たしているので40%" in text
     t2 = {**t, "cap": 0.30, "high": {"n": 3, "avg_x": -1.0, "proven": False}}
     assert "まだ満たしていないので30%" in "\n".join(trend_lines(t2, f, 100))
+
+
+# ---- 初心者向けの「ひとことで言うと」と「ことばの説明」（2026-11-25） ----
+
+def test_plain_summary_and_glossary():
+    from kabu.report import build_site
+    st = new_state("2026-11-09")
+    order = {"date": "2026-11-26", "summary": "市況", "buys": [], "sells": [], "holds": [],
+             "plain": "今日は何も買いません。株の世界全体が弱っていて、損を防ぐことを優先します。"}
+    body = build_email(order, st, [], [], "u")["body"]
+    assert body.index("【ひとことで言うと】") < body.index("【市況】") and "損を防ぐことを優先" in body
+    assert "ことばの説明" in body
+    html = build_site(st, [], [], order)
+    assert "ひとことで言うと：" in html and "<h2>ことばの説明</h2>" in html and "損切り" in html
+    assert "【ひとことで言うと】" not in build_email({**order, "plain": ""}, st, [], [], "u")["body"]

@@ -79,6 +79,8 @@ def run(today: str, root: Path, universe=None, check_note_files: bool = True, wa
         from kabu.picks import check_lot_rules
         errs += check_lot_rules(order, state, indicators, (b or {}).get("trend25"), trade_settings(data)["lot"])
         errs += check_learning(order, review, journal, playbook)
+        if len(str(order.get("plain", "")).strip()) < 20:
+            errs.append("注文ファイルに plain（ひとことで言うと：専門用語を使わず、今日どうするか・なぜかを2〜3文で）を書いてください")
     if errs:
         return 1, errs
     cautions = pattern_cautions(order, indicators, review,
