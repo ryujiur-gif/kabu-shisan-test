@@ -419,18 +419,24 @@ def trend25(nbars: list[dict], prev_day: str) -> dict | None:
 
 def trend_lines(t: dict | None, f: dict | None, lot: int, holdings_value: int | None = None) -> list[str]:
     """朝の資料の「地合いの上限と100株単位」。"""
-    from kabu.ledger import RATIOS, WEAK_STOCK_CAP, amount_for
+    from kabu.ledger import HIGH_MIN_CASES, RATIOS, WEAK_STOCK_CAP, WEAK_STOCK_CAP_PROVEN, amount_for
     L = ["", "### 地合いの上限と100株単位（プログラムが点検する決まり）", ""]
     if t:
         if t["above"]:
             L.append(f"- 日経平均 {t['close']:,.0f} は25日線 {t['ma25']:,.0f} より上（{t['dev']:+.2f}%）→ **地合いの上限なし**（通常どおり）")
         else:
+            cap = t.get("cap", WEAK_STOCK_CAP)
             room = ""
             if f:
-                left = int(f["total"] * WEAK_STOCK_CAP) - f["stock_value"]
+                left = int(f["total"] * cap) - f["stock_value"]
                 room = f"。いまの株は総資産の{f['stock_value'] / f['total']:.0%}で、上限まであと **{max(left, 0):,}円**"
             L.append(f"- 日経平均 {t['close']:,.0f} は25日線 {t['ma25']:,.0f} より下（{t['dev']:+.2f}%）→ **地合いが弱い：株の合計は総資産の"
-                     f"{WEAK_STOCK_CAP:.0%}まで、新しい買いは期待度「高」のみ**{room}")
+                     f"{cap:.0%}まで、新しい買いは期待度「高」のみ**{room}")
+        h = t.get("high") or {}
+        avg = "-" if h.get("avg_x") is None else f"{h['avg_x']:+.2f}%"
+        L.append(f"- 期待度「高」の実績：評価済み {h.get('n', 0)}件・日経平均との差の平均 {avg}。"
+                 f"{HIGH_MIN_CASES}件以上で平均がプラスなら、地合いが弱い間の上限を{WEAK_STOCK_CAP:.0%}→{WEAK_STOCK_CAP_PROVEN:.0%}に広げる"
+                 + ("（**条件を満たしているので40%**）" if h.get("proven") else "（まだ満たしていないので30%）"))
     else:
         L.append("- 日経平均の25日線を計算できませんでした（上限の点検は行わない）")
     if lot > 1 and f:
@@ -584,7 +590,7 @@ def build(root: Path, today: str) -> tuple[str, dict]:
     imminent = [e["event"] for e in imminent_high(events, tday)]
     # データの点検・修復と、予想の振り返り（学習）
     from kabu import health as _health, review as _review
-    review_md, problems = None, []
+    review_md, problems, rv = None, [], None
     try:
         filled = _health.backfill_history(root, series)
         if filled:
@@ -594,6 +600,9 @@ def build(root: Path, today: str) -> tuple[str, dict]:
         problems = [f"データの点検に失敗: {e}"]
     try:
         rv = _review.update(root, today, series, {"mood": regime.get("mood"), "imminent": bool(imminent)})
+        if t25:
+            from kabu.ledger import weak_cap
+            t25.update(weak_cap(rv))
         review_md = _review.briefing_lines(rv, _review.read_text(root / "data" / "review" / "playbook.md"))
     except Exception as e:
         notes.append(f"予想の振り返りの集計に失敗: {e}")

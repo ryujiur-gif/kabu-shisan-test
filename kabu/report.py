@@ -83,7 +83,7 @@ def build_email(order, state, history_rows, last_trades, site_url, market=None, 
         if trend:
             from kabu.ledger import WEAK_STOCK_CAP
             if trend.get("above") is False:
-                L.append(f"地合い：日経平均は25日線より下（{trend['dev']:+.2f}%）→ 株は総資産の{WEAK_STOCK_CAP:.0%}まで・新しい買いは期待度「高」のみ")
+                L.append(f"地合い：日経平均は25日線より下（{trend['dev']:+.2f}%）→ 株は総資産の{trend.get('cap', WEAK_STOCK_CAP):.0%}まで・新しい買いは期待度「高」のみ")
             else:
                 L.append(f"地合い：日経平均は25日線より上（{trend['dev']:+.2f}%）→ 上限なし")
         L.append("")

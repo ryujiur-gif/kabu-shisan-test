@@ -8,6 +8,23 @@ MIN_CASH_RATIO = 0.10    # 買った後も現金を総資産の10%以上残す
 MAX_STOCK_RATIO = 0.30   # 1銘柄の保有額は総資産の30%まで
 MAX_SECTOR_RATIO = 0.30  # 1業種の保有額は総資産の30%まで
 WEAK_STOCK_CAP = 0.30   # 日経平均が25日線より下の間は、株の合計を総資産の30%まで（2026-11-25 竜司さん決定）
+WEAK_STOCK_CAP_PROVEN = 0.40   # 期待度「高」の実績が条件を満たしたら、地合いが弱い間の上限をここまで広げる
+HIGH_MIN_CASES = 10            # 条件：期待度「高」の評価済みの買いが10件以上で、
+                               #       日経平均との差の平均がプラス（2026-11-25 竜司さん決定）
+
+
+def high_track(review: dict | None) -> dict:
+    """期待度「高」の買いの実績（評価済みの件数と、日経平均との差の平均）。"""
+    xs = [b["x"] for b in (review or {}).get("buys") or []
+          if b.get("confidence") == "高" and b.get("ret") is not None and b.get("x") is not None]
+    avg = round(sum(xs) / len(xs), 2) if xs else None
+    return {"n": len(xs), "avg_x": avg, "proven": len(xs) >= HIGH_MIN_CASES and avg is not None and avg > 0}
+
+
+def weak_cap(review: dict | None) -> dict:
+    """地合いが弱い間の株の上限。「高」の実績が条件を満たせば40%、そうでなければ30%。"""
+    t = high_track(review)
+    return {"cap": WEAK_STOCK_CAP_PROVEN if t["proven"] else WEAK_STOCK_CAP, "high": t}
 MAX_OPEN_GAP = 5.0       # 始値が前日終値より +5% 以上高い買いは見送る（高値づかみを避ける）
 TAX_RATE = 0.20315       # 利益・配当にかかる税（概算の「税引き後」の計算に使う）
 PORTIONS = {"全部": 1.0, "半分": 0.5}

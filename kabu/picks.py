@@ -254,7 +254,8 @@ def check_lot_rules(order: dict, state: dict, indicators: dict | None, trend: di
         h = state["holdings"].get(s.get("code"))
         if h and s.get("code") in f["values"]:
             stock -= f["values"][s["code"]] * sell_shares(h["shares"], s.get("portion")) / h["shares"]
-    room = int(total * WEAK_STOCK_CAP - stock)
+    cap = (trend or {}).get("cap", WEAK_STOCK_CAP)
+    room = int(total * cap - stock)
     for b in buys:
         code, conf = b.get("code"), b.get("confidence")
         px = ((indicators or {}).get(code) or {}).get("close")
@@ -270,7 +271,7 @@ def check_lot_rules(order: dict, state: dict, indicators: dict | None, trend: di
                         f"株価{int(budget / lot):,}円以下の銘柄を選ぶか、材料が十分なら期待度を上げてください")
         if weak:
             if room < cost:
-                errs.append(f"買い {code}：地合いが弱い間は株の合計が総資産の{WEAK_STOCK_CAP:.0%}までで、上限まであと{max(room, 0):,}円です。"
+                errs.append(f"買い {code}：地合いが弱い間は株の合計が総資産の{cap:.0%}までで、上限まであと{max(room, 0):,}円です。"
                             f"{lot}株（約{cost:,.0f}円）は買えません。見送るか、もっと安い銘柄にしてください")
             room -= min(budget, max(room, 0))
     return errs

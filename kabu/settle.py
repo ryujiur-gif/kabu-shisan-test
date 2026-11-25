@@ -84,7 +84,7 @@ def regime_cap(data_dir: Path, d: str):
     except (OSError, json.JSONDecodeError):
         return None
     t = b.get("trend25") or {}
-    return WEAK_STOCK_CAP if t.get("above") is False else None
+    return t.get("cap", WEAK_STOCK_CAP) if t.get("above") is False else None
 
 
 def run(today: date, data_dir: Path, fetch=None, actions_fetch=None, even_if_holiday: bool = False) -> dict:

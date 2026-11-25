@@ -108,3 +108,42 @@ def test_email_shows_regime_and_lot_plan():
                        indicators={"A": {"close": 640.0}}, lot=100)["body"]
     assert "地合い：日経平均は25日線より下（-2.50%）→ 株は総資産の30%まで・新しい買いは期待度「高」のみ" in body
     assert "100株単位で約300株の見込み" in body and "新しい買いは100株単位です。" in body
+
+
+# ---- 期待度「高」の実績しだいで上限を40%に（2026-11-25） ----
+
+def _rv(n, x, conf="高"):
+    return {"buys": [{"confidence": conf, "ret": 1.0, "x": x} for _ in range(n)]
+            + [{"confidence": "高", "ret": None, "x": None}]}      # 評価中は数えない
+
+
+def test_weak_cap_needs_ten_high_cases_beating_nikkei():
+    from kabu.ledger import weak_cap
+    assert weak_cap(None)["cap"] == 0.30
+    assert weak_cap(_rv(9, 2.0))["cap"] == 0.30                      # 件数不足
+    assert weak_cap(_rv(10, -0.5))["cap"] == 0.30                    # 平均がマイナス
+    assert weak_cap(_rv(10, 2.0, conf="中"))["cap"] == 0.30           # 「高」以外は数えない
+    w = weak_cap(_rv(10, 0.8))
+    assert w["cap"] == 0.40 and w["high"] == {"n": 10, "avg_x": 0.8, "proven": True}
+
+
+def test_cap_flows_to_checks_settle_and_text(tmp_path):
+    st = new_state("x")
+    st["cash"] = 650_000
+    st["holdings"] = {"C": {"name": "c", "shares": 350, "avg_cost": 1000.0}}   # 株35%
+    ind = {"A": {"close": 450.0}}
+    order = {"buys": [buy("A")], "sells": []}
+    assert check_lot_rules(order, st, ind, {"above": False, "cap": 0.30}, 100)   # 30%なら買えない
+    assert check_lot_rules(order, st, ind, {"above": False, "cap": 0.40}, 100) == []   # 40%なら買える
+    data = tmp_path / "data"
+    (data / "daily" / "2026-11-26").mkdir(parents=True)
+    (data / "daily" / "2026-11-26" / "briefing.json").write_text(
+        json.dumps({"trend25": {"above": False, "cap": 0.40}}), encoding="utf-8")
+    assert regime_cap(data, "2026-11-26") == 0.40
+    f = {"total": 1_000_000, "stock_value": 350_000}
+    t = {"close": 58000, "ma25": 60000, "dev": -3.3, "above": False, "cap": 0.40,
+         "high": {"n": 12, "avg_x": 0.8, "proven": True}}
+    text = "\n".join(trend_lines(t, f, 100))
+    assert "株の合計は総資産の40%まで" in text and "上限まであと **50,000円**" in text and "条件を満たしているので40%" in text
+    t2 = {**t, "cap": 0.30, "high": {"n": 3, "avg_x": -1.0, "proven": False}}
+    assert "まだ満たしていないので30%" in "\n".join(trend_lines(t2, f, 100))
