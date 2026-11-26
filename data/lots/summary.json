@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-25",
+  "asof": "2026-11-26",
   "lot": 100,
   "scenarios": [
     {
@@ -17,18 +17,18 @@
       "n_short": 9,
       "holdings": [],
       "last_day_chg": 0.0,
-      "asof": "2026-11-25"
+      "asof": "2026-11-26"
     },
     {
       "name": "300万円",
       "start": 3000000,
-      "total": 2985700,
-      "ret": -0.48,
+      "total": 2987400,
+      "ret": -0.42,
       "fees": 583,
       "tax": 0,
-      "net": 2985117,
-      "net_ret": -0.5,
-      "cash_ratio": 0.9,
+      "net": 2986817,
+      "net_ret": -0.44,
+      "cash_ratio": 0.954,
       "n_orders": 9,
       "n_bought": 2,
       "n_short": 7,
@@ -37,26 +37,21 @@
           "code": "3402",
           "name": "東レ",
           "shares": 100
-        },
-        {
-          "code": "8309",
-          "name": "三井住友トラストグループ",
-          "shares": 100
         }
       ],
-      "last_day_chg": -0.07,
-      "asof": "2026-11-25"
+      "last_day_chg": 0.06,
+      "asof": "2026-11-26"
     },
     {
       "name": "500万円",
       "start": 5000000,
-      "total": 4967550,
-      "ret": -0.65,
+      "total": 4970950,
+      "ret": -0.58,
       "fees": 1221,
       "tax": 0,
-      "net": 4966329,
-      "net_ret": -0.67,
-      "cash_ratio": 0.88,
+      "net": 4969729,
+      "net_ret": -0.61,
+      "cash_ratio": 0.945,
       "n_orders": 9,
       "n_bought": 3,
       "n_short": 6,
@@ -65,26 +60,21 @@
           "code": "3402",
           "name": "東レ",
           "shares": 200
-        },
-        {
-          "code": "8309",
-          "name": "三井住友トラストグループ",
-          "shares": 200
         }
       ],
-      "last_day_chg": -0.08,
-      "asof": "2026-11-25"
+      "last_day_chg": 0.07,
+      "asof": "2026-11-26"
     },
     {
       "name": "1,000万円",
       "start": 10000000,
-      "total": 9892400,
-      "ret": -1.08,
+      "total": 9896950,
+      "ret": -1.03,
       "fees": 3509,
       "tax": 0,
-      "net": 9888891,
-      "net_ret": -1.11,
-      "cash_ratio": 0.818,
+      "net": 9893441,
+      "net_ret": -1.07,
+      "cash_ratio": 0.9,
       "n_orders": 9,
       "n_bought": 6,
       "n_short": 3,
@@ -98,18 +88,13 @@
           "code": "3402",
           "name": "東レ",
           "shares": 400
-        },
-        {
-          "code": "8309",
-          "name": "三井住友トラストグループ",
-          "shares": 500
         }
       ],
-      "last_day_chg": 0.02,
-      "asof": "2026-11-25"
+      "last_day_chg": 0.05,
+      "asof": "2026-11-26"
     }
   ],
-  "main_ret": -3.01,
-  "bench_ret": -1.64,
-  "main_asof": "2026-11-25"
+  "main_ret": -3.03,
+  "bench_ret": -0.8,
+  "main_asof": "2026-11-26"
 }
